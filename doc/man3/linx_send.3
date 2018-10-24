@@ -1,0 +1,249 @@
+.TH LINX_SEND 3 "2006-07-30" 1.0 "LIBLINX"
+.SH "NAME"
+linx_send() - Send a LINX signal to a LINX endpoint (spid)
+.br
+
+linx_send_w_s() - Send a LINX signal and specify a different LINX endpoint as sender
+.br
+
+linx_send_w_opt() - Send a signal to a LINX endpoint (spid) with alternative methods
+
+.SH "SYNOPSIS"
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_send(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_SPID " to ");"
+.br
+
+.BI "int linx_send_w_s(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_SPID " from ", LINX_SPID " to ");"
+.br
+
+.BI "int linx_send_w_opt(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_SPID " from ", LINX_SPID " to ", int32_t *" taglist ");"
+.br
+
+.SH "DESCRIPTION"
+Send a signal to the LINX endpoint identified by the
+.I to
+binary identifier (spid).
+.BR linx_send (3)
+always consumes the signal buffer, even if the call fails, by freeing the memory
+and setting *sig to LINX_NIL to prevent further access.
+.br
+
+.I linx 
+is the handle to the LINX endpoint, via which the signal is transmitted.
+
+.br
+
+.I sig
+is the signal to send. The signal buffer must be owned by the transmitting LINX endpoint.
+It could have been allocated with
+.BR linx_alloc "(3)"
+or received via the same LINX endpoint. If
+.I sig
+is corrupt,
+.BR abort "(3)"
+is called.
+.br
+
+.I to
+is the identifier (spid) of the recipient LINX endpoint, usually found as a result of a 
+.BR linx_hunt "(3)."
+If the
+.I to
+spid refers to an endpoint that has been closed (i.e. in state LINX_ZOMBIE), -1 is returned
+and
+.I errno
+is set to ECONNRESET. If
+.I to
+does not apply to the specific method used in
+.BR linx_send_w_opt "(3),"
+the LINX_ILLEGAL_SPID define shall be used as its value.
+
+.I from
+is the identifier (spid) of a different sender endpoint (instead of the transmitting endpoint).
+The recipient will see this spid as the sender of the signal. If the
+.I from
+spid refers to an endpoint that has been closed (i.e. in state LINX_ZOMBIE), -1 is returned
+and
+.I errno
+is set to ECONNRESET. If
+.I from
+does not apply to the specific method used in
+.BR linx_send_w_opt "(3),"
+the LINX_ILLEGAL_SPID define shall be used as its value.
+
+.I taglist
+is an array of tags and values used with the call
+.BR linx_send_w_opt "(3)."
+Each tag has an associated value that directly follows it. See the example for
+details. If the
+.I taglist
+contains an invalid parameter, -1 is returned and
+.I errno
+is set to EINVAL. The
+.I taglist
+parameter list can contain the folllowing values.
+.TP
+.B LINX_SIG_OPT_OOB
+
+The 
+.B LINX_SIG_OPT_OOB
+tag is used to enable the OOB send method. The value of the 
+.B LINX_SIG_OPT_OOB
+tag shall be 1.
+
+An OOB signal is a signal that is transmitted, transported, forwarded and 
+received ahead of in band signals. When the OOB signal is placed in the signal
+queue of the receiving process, it is placed ahead of in band signals but after
+OOB signals present in the signal queue.
+
+If the OOB signal is sent inter node and the operating system on the receiving
+node is not supporting OOB, the signal is delivered as an in band signal.
+
+When sending an OOB signal the 
+.I sig 
+parameter is the signal to be sent OOB. The signal buffer must be owned by the
+transmitting LINX endpoint. It could have been allocated with 
+.BR linx_alloc "(3)"
+or received.
+
+When an OOB signal is sent using
+.BR linx_send_w_opt "(3),"
+a signal attribute is set on the signal, 
+.BR LINX_SIG_ATTR_OOB "."
+The
+.BR linx_sigattr "(3)"
+is used to test if the attribute is set or not.
+
+.TP
+.B LINX_SIG_OPT_END
+
+Marks the end of the taglist and has no value. Must be at the end of the
+.IR taglist "."
+
+
+.SH "RETURN VALUE"
+Returns 0 if successful. On failure, -1 is returned and
+.I errno 
+will be set. In any case, 
+.I sig
+is set to LINX_NIL.
+
+.SH "ERRORS"
+.BR EBADF ", " ENOTSOCK
+The LINX endpoint is associated with an invalid socket descriptor.
+.br
+
+.BR ENOBUFS ", " ENOMEM
+Insufficient memory is available.
+.br
+
+.BR ECONNRESET
+The destination spid refers to a LINX endpoint that has been closed (i.e. in
+state LINX_ZOMBIE). This situation is best avoided by using 
+.IR linx_attach "(3)"
+to supervise the receiving LINX endpoint. 
+Closed spid are not reused until forced by spid instance counter overflow.
+.br
+
+.BR EPIPE
+This error is reported at an attempt to send to the spid of a LINX
+endpoint that is being closed as the call occurs.
+.br
+
+.BR EINVAL
+This error is reported if an unrecognized taglist parameter was passed in the
+.IR taglist "."
+.br
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH "EXAMPLE"
+.RS
+.nf
+	union LINX_SIGNAL *sig;
+	LINX *linx;
+	LINX_SPID to_spid;
+	LINX_SPID from_spid;
+	int32_t taglist[3];
+	...
+	taglist[0]=LINX_SIG_OPT_OOB;
+	taglist[1]=1;
+	taglist[2]=LINX_SIG_OPT_END;
+	sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), 100);
+	(void)linx_send_w_opt(linx, &sig, to_spid, from_spid, taglist);
+	...
+.br
+.fi
+.RE
+
+.SH "NOTES"
+It is illegal to allocate/receive a signal buffer on one LINX endpoint and then send it
+using
+.BR linx_send "(3)" 
+from another LINX endpoint. In that case a new signal buffer needs to be allocated
+and the buffer contents moved to the new signal buffers prior to sending it.
+ 
+.RS
+.nf
+	union LINX_SIGNAL *sig1, *sig2;
+	LINX_OSBUFSIZE size;
+	LINX_SIGSELECT sel[] = {0};
+	LINX *linx1, *linx2;
+	LINX_SPID to_spid;
+	...
+	sig1 = linx_receive(linx1, &sig1, sel);
+	size = linx_sigsize(linx1, sig1);
+	sig2 = linx_alloc(linx2, size, sel);
+	memcpy((void)sig2, (void)sig1, size);
+	(void)linx_free_buf(linx1, &sig1);
+	(void)linx_send(linx2, &sig2, to_spid);
+	...
+.br
+.fi
+.RE
+
+.SH SEE ALSO
+.BR linx "(7), " 
+.BR linx_alloc "(3), " 
+.BR linx_hunt "(3), " 
+.BR linx_receive "(3), " 
+.BR linx_receive_w_tmo "(3), "
+.BR linx_receive_from "(3), " 
+.BR linx_sigattr "(3) "
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

@@ -1,0 +1,303 @@
+.TH LINX_RECEIVE 3 "2006-09-06" 1.0 "LIBLINX"
+.SH NAME
+linx_receive() - Receive a LINX signal
+.br
+linx_receive_w_tmo() - Receive a LINX signal with timeout
+.br
+linx_receive_from() - Receive a LINX signal, but only from a given endpoint
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_receive(LINX *" linx ", union LINX_SIGNAL **" sig ", const LINX_SIGSELECT *" sig_sel ");"
+.br
+
+.BI "int linx_receive_w_tmo(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_OSTIME " tmo ", const LINX_SIGSELECT *" sig_sel ");"
+.br
+
+.BI "int linx_receive_from(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_OSTIME " tmo ", const LINX_SIGSELECT *" sig_sel ", LINX_SPID " from ");"
+.br
+.SH DESCRIPTION
+Receives a LINX signal. 
+The calls will block until a signal is received or, if applicable, a timeout has elapsed. 
+The first signal in the receive queue that matches the
+.I sig_sel
+filter is returned to the user. This way the user may process signals in a different order
+than when they arrived at the LINX endpoint. Signals that have arrived but have not yet been
+received using these calls will stay in the receive queue.
+.br
+
+.BR linx_receive "()"
+will wait indefinitely for a signal that matches the 
+.I sig_sel
+filter. 
+.I sig_sel
+filters are described in 
+.BR linx "(7)."
+.br
+
+.BR linx_receive_w_tmo "()"
+waits until the provided timeout,
+.IR tmo ","
+has elapsed or for a signal that matches the
+.I sig_sel
+filter. When the timeout has elapsed, zero is returned and
+.I sig
+is set to
+LINX_NIL instead of a pointer to a signal buffer.
+.br
+
+.BR linx_receive_from "()"
+works in the same way as
+.BR linx_receive_w_tmo "()"
+except that it will only accept signals sent from the LINX endpoint,
+indicated by the spid
+.IR from "."
+.br
+
+.I linx
+is the handle to the LINX endpoint, via which the signals are received.
+.br
+
+.I sig
+is the received signal. The signal buffer is allocated by
+.BR linx_receive (3).
+Never use a preallocated signal buffer as it will be lost.
+.br
+
+.I sig_sel
+is a select filter, defining which types of buffers to receive.
+It is a list of signal numbers with a leading count indicating
+the number of signal numbers in the list. If the first position
+is set to a negative count, all signal numbers except those
+listed will be received.
+Read more about select filters in 
+.BR linx "(7)."
+.br
+
+.I tmo
+is the maximum number of milliseconds to wait. The
+value 0 will result in a check for a signal matching
+.I sig_sel
+followed by an immediate return.
+.br
+
+.I from
+is the spid of the other LINX endpoint to receive from. Before 
+.BR linx_receive_from "()"
+is used, it is important to attach to the other LINX endpoint with
+.BR linx_attach "(3)" 
+and also to include the attach signal number in the 
+.I sig_sel
+filter. If this is not done and the other LINX endpoint (with spid
+.I from
+) is closed, this call will block the entire specified timeout.
+
+.SH "RETURN VALUE"
+Returns the size of the received signal in bytes if successful.
+If a signal was received, it can be found in
+.IR sig ","
+otherwise 
+.I sig
+will be LINX_NIL. Returns 0 if
+.BR linx_receive_w_tmo "(3)"
+was called and no message was received before the timeout.
+
+If unsuccessful, -1 is returned and 
+.I errno
+is set.
+.SH ERRORS
+
+.B ENOMEM
+if there is not enough memory.
+.br
+
+.BR EBADF ", " EFAULT ", " ENOTCONN ", " ENOTSOCK
+if the underlying
+.IR linx
+structure contains a invalid socket descriptor.
+.br
+
+.BR EINTR
+the call was interrupted by a signal.
+.br
+
+
+.SH "BUGS/LIMITATIONS"
+None.
+
+.SH "NOTES"
+
+In case the application needs to wait on multiple sockets of different kinds,
+the internal socket descriptor in a LINX endpoint can be fetched with
+.BI linx_get_descriptor "(3)"
+and used in a 
+.BI select "(2)"
+or 
+.BI poll "(2)"
+call to wake up if anything arrives at the LINX endpoint.
+
+.SH "EXAMPLE"
+In this example the server sends four signals to the client and the
+client chooses to receive them in the order it wants to.
+
+.nf
+
+Signal file (example.sig):
+
+#include <linx.h>
+
+#define SIG_X 0x1
+#define SIG_Y 0x2
+#define SIG_Z 0x3
+#define SIG_W 0x4
+
+/* select filter is { number-of-signals, signal, signal, ... } */
+static const LINX_SIGSELECT sigsel_any[]      = { 0 };
+static const LINX_SIGSELECT sigsel_sig_x_z[]  = { 2, SIG_X, SIG_Z };
+static const LINX_SIGSELECT sigsel_sig_w[]    = { 1, SIG_W };
+
+
+Server:
+
+#include <linx.h>
+#include "example.sig"
+
+int
+main (int argc, char *argv[])
+{
+  LINX *linx;
+  LINX_SPID client;
+  union LINX_SIGNAL *sig;
+
+  /* Open a linx endpoint with huntname "server" */
+  linx = linx_open("server", NULL, 0);
+
+  /* Hunt for client */
+  linx_hunt(linx, "client", NULL);
+
+  /* Receive hunt signal */
+  linx_receive(linx, &sig, LINX_OS_HUNT_SIG);
+
+  /* Retrieve client's spid */
+  client = linx_sender(linx, &sig);
+
+  /* Free the hunt signal */
+  linx_free_buf(linx, &sig);
+
+  /*  Send four signals, they will be stored in the receive
+   *  queue on the client in same order as sent but the
+   *  client chooses in which order to retrieve them from
+   *  the queue.
+   */
+
+  /* Send signal with signal number SIG_X */
+  sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), SIG_X);  
+  linx_send(linx, &sig, client);
+
+  /* Send signal with signal number SIG_Y */
+  sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), SIG_Y);  
+  linx_send(linx, &sig, client);
+
+  /* Send signal with signal number SIG_Z */
+  sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), SIG_Z);  
+  linx_send(linx, &sig, client);
+
+  /* Send signal with signal number SIG_W */
+  sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), SIG_W);  
+  linx_send(linx, &sig, client);
+  linx_free_buf(linx, &sig);
+
+  /* Close the linx endpoint */
+  linx_close (linx);
+}
+
+
+Client:
+
+#include <linx.h>
+#include "example.sig"
+
+int
+main (int argc, char *argv[])
+{
+  LINX *linx;
+  LINX_SPID client;
+
+  /* Open a linx endpoint with huntname "client" */
+  linx = linx_open("client", NULL, 0);
+
+  /* Check for signal SIG_W first */  
+  linx_receive(linx, &sig, sigsel_sig_w);
+
+  /* Do work, sig->sig_no is SIG_W */
+
+  /* Free signal when done */
+  linx_free_buf(linx, &sig);
+
+  /* Receive the the first signal waiting in the receive queue */
+  linx_receive(linx, &sig, sigsel_any);
+
+  /* Do work, sig->sig_no is SIG_X */
+
+  linx_free_buf(linx, &sig);
+
+  /* Receive either SIG_X or SIG_Z from the receive queue. */ 
+  linx_receive(linx, &sig, sigsel_sig_x_z);
+
+  /* Do work, sig->sig_no is SIG_Z (SIG_X has been consumed) */
+
+  linx_free_buf(linx, &sig);
+
+  /* Receive the the first signal waiting in the receive queue */
+  linx_receive(linx, &sig, sigsel_any);
+
+  /* Do work, sig->sig_no is SIG_Y */
+
+  linx_free_buf(linx, &sig);
+
+  linx_close (linx);
+}
+
+.fi
+
+.SH SEE ALSO
+.BR linx "(7), " linx_hunt "(3), " linx_send "(3), "
+.BR linx_sender "(3), " linx_free_buf "(3), " linx_alloc "(3), "
+.BR linx_get_descriptor "(3), "
+.BR poll "(2), " select "(2)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

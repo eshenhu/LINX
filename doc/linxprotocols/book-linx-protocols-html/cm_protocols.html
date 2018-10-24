@@ -1,0 +1,20 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>4. Enea LINX Connection Manager Protocols</title><link rel="stylesheet" href="html.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><meta name="keywords" content=""><link rel="start" href="title.html" title="LINX Protocols"><link rel="up" href="title.html" title="LINX Protocols"><link rel="prev" href="linx-proto-msgs.html" title="3.6 Protocol Messages"><link rel="next" href="cm__connestablish.html" title="4.1 Connection Establishment"><base target="body"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><td colspan="2" align="left"><span class="headerbaseline">Document Version 21</span></td><td align="right"><IMG src="images/enea_logo.png"></td></tr><tr><td colspan="3" align="center" valign="bottom"><h2 class="title"><a name="book_linx_proto"></a>LINX Protocols</h2></td></tr><tr><td width="20%" align="left"><a accesskey="p" href="linx-proto-msgs.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="cm__connestablish.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="cm_protocols"></a>4. Enea LINX Connection Manager Protocols</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="cm__connestablish.html">4.1 - Connection Establishment</a></span></dt><dt><span class="section"><a href="cm_proto-reliablemsg.html">4.2 - Reliable Message Passing</a></span></dt><dt><span class="section"><a href="cm_proto-supervision.html">4.3 - Connection Supervision</a></span></dt></dl></div><p>This chapter describes<a class="indexterm" name="id2613010"></a> in general terms the functionality a Connection Manager must
+  provide.</p><p>A Connection Manager shall hide details of the underlying media, e.g.
+  addressing, general media properties, how to go about to establish
+  connections, media aggregation, media redundancy and so on. A Connection
+  Manager shall support creation of associations, known as connections that
+  are suitable for reliable message passing of arbitrarily sized messages. A
+  Connection Manager must not rely on implicit connection supervision since
+  this can cause long delay between peer failure and detection if the link is
+  idle. A message accepted by a Connection Manager must be delivered to its
+  destination.</p><p>If, for any reason, a Connection Manager is unable to deliver a
+  message RLNH must be notified and the connection restarted since its state
+  at this point is inconsistent.</p><p>Since Enea LINX runs on systems with very differing size, the
+  Connection Manager protocol must be scalable. A particular implementation
+  may ignore this requirement either because the underlying media doesn't
+  support scalability or that a non-scalable implementation has been chosen.
+  However, interfaces to the Connection Manager and protocol design when the
+  media supports big configuration shall not make design decisions that
+  prevents the system to grow to big configurations should the need
+  arise.</p><p>Enea LINX must be able to coexist with other protocols when sharing
+  media.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="linx-proto-msgs.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="title.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="cm__connestablish.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><b>3.6 Protocol Messages</b> </td><td width="20%" align="center"><a accesskey="h" href="title.html">Home</a> | <a accesskey="i" href="ix01.html">Index</a></td><td width="40%" align="right" valign="top"> <b>4.1 Connection Establishment</b></td></tr><tr> </tr><tr><td colspan="3" align="center">© Enea Software AB 2011</td></tr></table></div></body></html>

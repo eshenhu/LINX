@@ -1,0 +1,2256 @@
+.TH LINX 7 2007-09-14 "LINX Man Page" "LINX"
+.SH NAME
+linx \- LINX inter-process communication protocol
+.SH SYNOPSIS
+.B #include <linx.h>
+.br
+.B #include <linx_socket.h>
+.br
+.B #include <linx_ioctl.h>
+.br
+.B #include <linx_types.h>
+.br
+.B #include <sys/socket.h>
+.br
+.B #include <sys/ioctl.h>
+
+.SH DESCRIPTION
+
+.B LINX
+is a location transparent inter-process communication protocol. It is based
+on the message passing technology used in the Enea OSE family of real time
+operating systems.
+.PP
+LINX consists of a set of kernel modules and provides a
+standard socket based interface using its own protocol family,
+.B PF_LINX.
+There is also a LINX library that provides a more advanced messaging API.
+Applications normally access LINX through this library, but sometimes
+direct access via the socket interface may be necessary.
+.PP
+
+.SH "LINX CONCEPTS"
+
+An application that wants to communicate using LINX must
+first create a
+.B LINX endpoint.
+One thread may own multiple LINX endpoints simultaneously.
+A LINX endpoint is created with a non-unique name (a string).
+A handle which is used to refer to the endpoint in
+subsequent calls is returned to the application.
+
+LINX endpoints communicate by sending and receiving
+.B LINX signals.
+The properties of LINX signals are described below.
+
+Each LINX endpoint has a binary identifier called a 
+.B spid
+which is unique within the node. A sending endpoint must know the
+spid of the destination endpoint to be able to communicate.
+The spid of a peer LINX endpoint is normally obtained by
+.B hunting
+for its name. When an endpoint with a matching name is found or
+created, LINX sends a hunt signal back to the hunting endpoint
+that appears to have been sent from the found endpoint. The spid
+can thus be obtained by looking at the sender of this signal.
+
+A LINX endpoint can supervise, or
+.B attach
+to, the spid of a peer endpoint in order to be notified by a
+LINX signal when it is terminated or becomes unreachable.
+
+The communication path between two LINX nodes is called a
+.B LINX link.
+A LINX link is created with a name string, and the same link may
+have different names on the opposite nodes, i.e. the
+link between nodes A and B may be called "LinkToB" on A,
+and "LinkToA" on B.
+
+When hunting for an endpoint on a remote node, the name of
+the endpoint is prepended with the path of link names needed to
+reach the node, e.g. "LinkToB/LinkToC/EndpointName".
+LINX will create a virtual endpoint that acts as a local
+representation of the remote endpoint. LINX signals sent to the
+spid of a virtual endpoint are automatically routed to the proper
+destination on the remote node.
+
+When a LINX endpoint is closed, its owned LINX signals are freed.
+
+It is not allowed to use a LINX endpoint from two contexts at
+the same time. When a Linux process has multiple threads, it is
+not allowed to access a LINX endpoint from other contexts than
+the one that opened it. When
+.BR fork (2)
+is called, the child process inherits copies of the parents
+socket related resources, including LINX endpoints. In this
+case, either the parent or the child shall close its LINX
+endpoints. A LINX endpoint is not removed until it has been
+closed by all of its owners.
+
+
+.SH "LINX Application Interfaces"
+
+LINX provides both a standard socket interface and a more advanced
+.B LINX API
+which is available through the LINX library, to be linked with the
+application. The LINX API is the recommended way for applications to
+access LINX, since it simplifies for the programmer by abstracting the
+direct socket interactions. It implements a set of functions specified in
+.BR linx.h (3).
+.PP
+The LINX socket interface is the underlying socket implementation
+provided by the LINX kernel module and is used by the LINX library.
+It is described in detail below.
+.PP
+It is possible for applications to use a combination of the LINX API
+and the LINX socket interface. In this case, the LINX API function
+.BR linx_get_descriptor (3)
+can be used to obtain the socket descriptor of a LINX endpoint.
+This descriptor can be used together with other file descriptors
+in generic
+.BR poll (2)
+or
+.BR select (2)
+calls. Note that it is NOT allowed to call
+.BR close (2)
+on a LINX socket descriptor obtained by a
+.BR linx_get_descriptor (3)
+call.
+
+
+.SH "LINX Signals"
+
+A LINX signal consists of a mandatory leading 4-byte signal number,
+optionally followed by data. Thus, the size of a LINX signal buffer
+must be at least 4 bytes. LINX signal numbers are of type
+.B LINX_SIGSELECT.
+Signal numbers are mainly defined by the applications, but a few values
+are not allowed. Zero (0) is illegal and must not be used and 250-255
+are reserved by LINX.
+.PP
+LINX provides endian conversion of the signal number if needed when
+a signal is sent to a remote node. The signal data is not converted.
+
+.SH "LINX Socket Interface"
+
+The LINX socket interface allows application programmers to access LINX
+using standard socket calls. It should be noted that only a subset of
+the socket calls are implemented and that additional features have been
+made available through ioctl calls.
+These deviations and features are described below.
+.PP
+.TP
+.B struct sockaddr_linx
+When using the socket interface directly, a LINX endpoint is represented
+by a
+.B sockaddr_linx
+structure:
+
+.nf
+struct sockaddr_linx
+{
+        sa_family_t family;
+        LINX_SPID   spid;
+};
+.fi
+.br
+
+.B family
+shall be 
+.B AF_LINX
+and
+.B spid
+is the spid of the LINX endpoint.
+The
+.B sockaddr_linx
+structure is type-casted into a generic
+.B sockaddr
+structure when passed to the socket interface function calls.
+
+.br
+.PP
+
+The following calls are provided by the LINX socket interface:
+
+.TP
+.B socket()
+A LINX socket is created by calling the
+.BR socket (2)
+function as:
+
+.BI "linx_sd = socket(" PF_LINX ", " SOCK_DGRAM ", 0)";
+
+When a LINX socket is created, its name is unspecified.
+To assign a name to the socket, use the
+.B LINX_IOCTL_HUNTNAME
+ioctl request.
+
+On success, the return value is a descriptor referencing the
+socket. On error, -1 is returned and 
+.I errno
+is set to one of the following values:
+
+.B EPROTONOTSUPPORTED
+.br
+The protocol type is not supported. Only
+.B PF_LINX
+is accepted.
+
+.B ESOCKTNOSUPPORT
+.br
+The socket type is not supported. Only
+.B SOCK_DGRAM
+is accepted.
+
+.B ENOMEM
+.br
+Insufficient memory is available. Alternatively, the maximum
+number of spids has been reached. This value is configurable
+as a parameter to the LINX kernel module, see LINX Users
+Guide for more information.
+.PP
+
+
+.TP
+.B sendto()
+The
+.BR sendto (2)
+function is called as:
+
+.BI "len = sendto(" linx_sd ", " payload ", " size ", 0, (struct " sockaddr "*) &" sockaddr_linx ", sizeof(struct " sockaddr_linx "));"
+
+The
+.I payload
+shall be a LINX signal buffer and
+.I size
+shall be its length in bytes. Note that it is mandatory for a LINX signal to have a
+leading 4 byte signal number. The
+.I spid
+field of the
+.I sockaddr_linx
+structure shall be the spid of the destination endpoint.
+
+On success, the number of bytes sent is returned. On error, -1 is returned and
+.I errno
+is set to one of the following values:
+
+.B EBADF
+.br
+An invalid descriptor was specified.
+
+.B ECONNRESET
+.br
+The destination endpoint has been killed.
+
+.B EINVAL
+.br
+Invalid argument passed.
+
+.B ENOMEM
+.br
+Insufficient memory is available.
+
+.B EOPNOTSUPP
+.br
+The sending LINX socket has not been assigned a name.
+
+.BR EPIPE
+.br
+This error is reported at an attempt to send to the spid of a LINX
+endpoint that is being closed as the call occurs.
+.PP
+
+.TP
+.B sendmsg()
+The
+.BR sendmsg (2)
+function is called as:
+
+.BI "len = sendmsg(" linx_sd ", " *msg ",  0);"
+
+.I msg
+is a
+.B msghdr
+structure as defined in
+.BR sendmsg (2).
+The
+.I msg_iov
+field of the msghdr structure shall point to an
+.B iovec
+structure
+containing the LINX signal buffer to transmit and the
+.I msg_iovlen
+field shall be set to 1. Note that it is mandatory for a LINX signal
+to have a leading 4 byte signal number.
+The
+.I msg_name
+field shall be a pointer to a
+.B sockaddr_linx
+structure containing
+the spid of the destination endpoint and the
+.I msg_namelen
+field shall be set to the size of the sockaddr_linx structure.
+The ancillary fields and the flags field of the msghdr structure
+shall not be used and be set to zero.
+
+On success, the number of bytes sent is returned. On error, -1 is returned and
+.I errno
+is set to one of the following values:
+
+.B EBADF
+.br
+An invalid descriptor was specified.
+
+.B ECONNRESET
+.br
+The destination endpoint has been killed. Note that this case
+is accepted and the signal is silently discarded by LINX.
+
+.B EINVAL
+.br
+Invalid argument passed.
+
+.B ENOMEM
+.br
+Insufficient memory is available.
+
+.B EOPNOTSUPP
+.br
+The sending socket has not been assigned a name.
+
+.BR EPIPE
+.br
+This error is reported at an attempt to send to the spid of a LINX
+endpoint that is being closed as the call occurs.
+.PP
+
+
+.TP
+.B recvfrom()
+The
+.BR recvfrom (2)
+function is called as:
+
+.BI "len = recvfrom(" linx_sd ", " payload ", " size ", 0, (struct " sockaddr "*) &" sockaddr_linx ", sizeof(struct " sockaddr_linx "));"
+
+It is used to receive any LINX signal from any LINX endpoint. It can not be
+used when signal number filtering and/or sender filtering is needed, see
+.BR recvmsg (2).
+The first signal in the sockets receive queue is returned in the supplied
+.I payload
+buffer. If no signal is currently available at the socket, the call blocks
+until a signal is received. The sender of the signal is returned in the
+.B sockaddr_linx
+structure. Note that the
+.I size
+of the payload buffer must be at least 4 bytes, since it is mandatory for
+a LINX signal to have a 4 byte leading signal number.
+.br
+
+On success, the number of bytes received is returned. If the received signal
+is larger than the supplied payload buffer, zero is returned and the signal
+buffer size is written as a 32-bit value in the first 4 bytes of the payload
+buffer. On error, -1 is returned and
+.I errno
+is set to one of the following values:
+
+.B EBADF
+.br
+An invalid descriptor was specified.
+
+.B EFAULT
+.br
+Invalid payload buffer pointer provided.
+
+.B EINVAL
+.br
+Invalid argument passed.
+
+.B ENOMEM
+.br
+Insufficient memory is available.
+
+.B EOPNOTSUPP
+.br
+The receiving socket has not been assigned a name.
+.PP
+
+.TP
+.B recvmsg()
+The
+.BR recvmsg (2)
+function is called as:
+
+.BI "len = recvmsg(" sd ", " msg ",  0);"
+
+.I msg
+is a pointer to a
+.B msghdr
+structure as defined in
+.BR recvmsg (2).
+A LINX signal buffer shall be supplied in an
+.B iovec
+structure
+pointed to from the
+.I msg_iov
+field and the
+.B msg_iovlen
+field shall be set to 1.
+Note that the size of the supplied buffer must be at least 4 bytes, since
+it is mandatory for a LINX signal to have a 4 byte leading signal number.
+.br
+
+The 
+.BR recvmsg (2)
+call supports signal number filtering and sender filtering. This allows
+the user to specify which signal numbers shall be received and/or from
+which sender. The signal filter is described by a
+.B linx_receive_filter_param
+structure:
+
+.nf
+struct linx_receive_filter_param
+{
+        LINX_SPID             from;
+        LINX_OSBUFSIZE        sigselect_size;
+        const LINX_SIGSELECT *sigselect;
+};
+.fi
+
+The
+.B from
+field specifies that only signals from a specific spid should be
+received and
+.B sigselect
+is an array of
+.B LINX_SIGSELECT
+numbers to be received. The first position in the array contains the number of
+entries in the list that follows. If the first position is set to a negative
+count, all LINX signals except those listed will be received. The size of
+the array is
+.B sigselect_size.
+.br
+
+The filtering uses ancillary fields in the
+.B msghdr
+structure
+and is described by the following example code:
+
+.nf
+struct msghdr msg;
+char cmsg[CMSG_SPACE(sizeof(struct linx_receive_filter_param))];
+struct linx_receive_filter_param * rfp;
+struct iovec iov;
+const LINX_SIGSELECT sig_sel[] = { 1, EXAMPLE_SIG };
+
+rfp = ((struct linx_receive_filter_param *)
+        (CMSG_DATA(((struct cmsghdr *)cmsg))));
+rfp->sigselect_size = sizeof(sig_sel);
+rfp->from = from_spid;
+rfp->sigselect = sig_sel;
+msg.msg_name = (void*)&linx_addr;
+msg.msg_namelen = sizeof(struct sockaddr_linx);
+msg.msg_iov = &iov;
+msg.msg_iovlen = 1;
+msg.msg_flags = 0;
+msg.msg_control = cmsg;
+msg.msg_controllen =
+        CMSG_SPACE(sizeof(struct linx_receive_filter_param));
+((struct cmsghdr *)cmsg)->cmsg_len = msg.msg_controllen;
+((struct cmsghdr *)cmsg)->cmsg_level = 0;
+((struct cmsghdr *)cmsg)->cmsg_type = 0;
+iov.iov_base = *signal;
+iov.iov_len = sigsize;
+read_size = recvmsg(linx->socket, &msg, 0);
+.fi
+
+On success, the number of bytes received is returned. If the received signal
+is larger than the supplied payload buffer, zero is returned and the signal
+buffer size is written as a 32-bit value in the first 4 bytes of the payload
+buffer. On error, -1 is returned and
+.I errno
+is set to one of the following values:
+
+.B EBADF
+.br
+An invalid descriptor was specified.
+
+.B EFAULT
+.br
+An invalid msghdr structure was provided.
+
+.B EINVAL
+.br
+Invalid argument passed.
+
+.B ENOMEM
+.br
+Insufficient memory is available.
+
+.B EOPNOTSUPP
+.br
+The sending socket has not been assigned a name.
+.br
+
+.TP
+.B poll()
+LINX socket descriptors can be used in the
+.BR poll (2)
+call.
+
+The call returns a bitmask that indicates the state of the LINX socket
+receive queues. The following possible bits can be set at return from
+this function: 
+.B POLLERR
+if the LINX socket is in an error state,
+.B POLLHUP
+if the LINX socket has been shutdown/released,
+.BR POLLIN " and " POLLRDNORM
+if the LINX socket has data to read in receive queue.
+.br
+
+.TP
+.B select()
+LINX socket descriptors can be used together with other file descriptors
+in the
+.BR select (2)
+call.
+.br
+
+.TP
+.B ioctl()
+IOCTL requests are sent to a LINX socket using the
+.BR ioctl (2)
+call. See below for all IOCTL request codes supported by LINX sockets.
+.br
+
+.TP
+.B close()
+A LINX socket created by a
+.IR socket "(2)"
+call can be closed with
+.IR close "(2)."
+Note that this function shall NOT be used on any LINX socket descriptor
+created with
+.IR linx_open (3)
+or obtained by the LINX API function
+.IR linx_get_descriptor (3).
+.br
+
+On success, 0 is returned, otherwise -1 is returned and 
+.I errno
+can be one of the following errors:
+
+.B EBADF
+.br
+An invalid descriptor was specified.
+.PP
+
+Only the calls described above are supported by a LINX socket. 
+The following are NOT supported on LINX sockets and shall not be used:
+.IR bind "(2), " connect "(2), " socketpair "(2), " accept "(2), " getname "(2), "
+.IR listen "(2), " shutdown "(2), " setsockopt "(2), " getsockopt "(2), "
+.IR mmap "(2) and " sendpage "(2)."
+
+
+.SH "IOCTL Request Codes"
+The following IOCTL request codes can be accessed using
+.IR ioctl "(2)"
+on LINX sockets:
+.br
+
+.B LINX_IOCTL_SEND
+.br
+.RS
+Sends a signal from a LINX socket
+.BR sd .
+The correct syntax is:
+
+.nf
+.BI "struct linx_sndrcv_param *" sndrcv ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_SEND ", " sndrcv ");"
+.fi
+
+.PP
+.I sndrcv
+is a
+.B linx_sndrcv_param
+structure:
+.RS
+.nf
+struct linx_sndrcv_param
+{
+	__u32 from;
+	__u32 to;
+	__u32 size;
+	__u32 sig_attr;
+	__u32 sigselect_size;
+	__u64 sigselect;
+	__u32 tmo;
+	__u64 buffer;
+};
+.fi
+.PP
+.RE
+.BR from
+is the spid of the sender, the sender does not need to be the current socket, the signal
+is sent from the current socket but the receiver will see the
+.BR from
+as the sending spid, the default case is that
+.BR from
+is the spid of the current LINX socket.
+.BR to
+is the spid of the receiver,
+.BR size
+is the size of the signal to be sent and
+.BR sig_attr
+are the attributes of the signal. The
+.BR sigselect_size
+and
+.BR sigselect
+are not used by
+.BR LINX_IOCTL_SEND
+and
+.BR notused
+is for padding the struct since it needs to be 64-bit aligned but should be zeroed for
+future use.
+.BR buffer
+is the pointer to the buffer to be sent, it is passed as a 64 bit unsigned value to be
+both 32-bit and 64-bit compatible.
+
+On success, the number of bytes sent is returned.
+.br
+.PP
+.RE
+
+.B LINX_IOCTL_RECEIVE
+.br
+.RS
+Receives a signal on a LINX socket
+.BR sd .
+The call will block until a signal is received.
+The correct syntax is:
+
+.nf
+.BI "struct linx_sndrcv_param *" sndrcv ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_RECEIVE ", " sndrcv ");"
+.fi
+
+.PP
+.I sndrcv
+is a
+.B linx_sndrcv_param
+structure:
+.RS
+.nf
+struct linx_sndrcv_param
+{
+	__u32 from;
+	__u32 to;
+	__u32 size;
+	__u32 sig_attr;
+	__u32 sigselect_size;
+	__u64 sigselect;
+	__u32 tmo;
+	__u64 buffer;
+};
+.fi
+.PP
+.RE
+The 
+.BR from
+field should be set to
+.BR LINX_ILLEGAL_SPID
+if signals from anyone should be received or if only signals
+from a specific spid should be received then
+.BR from
+should be set to that spid. If
+.BR LINX_ILLEGAL_SPID
+was set the
+.BR from
+will contain the spid of the sender after the return of the call.
+The
+.BR to
+field is not used when receiving a signal.
+The
+.BR size
+field is the size of the provided buffer. When the call returns the
+.BR sig_attr
+field is set to the attribute the signal carriers.
+The
+.BR sigselect
+field is an array of
+.B LINX_SIGSELECT
+numbers to be received. The first position in the array contains the number of
+entries in the list that follows. If the first position is set to a negative
+count, all LINX signals except those listed will be received. The size of
+the array is
+.B sigselect_size.
+When the
+.BR tmo
+field is used the call waits maximum
+.BR tmo
+milliseconds before returning even if no signal has been received, if a blocking
+receive is requested the
+.BR tmo
+field should be ~0 (0xFFFFFFFF), this will block forever. If no signal
+is received the.
+.BR buffer
+pointer will be set to NULL (the provided buffer is always consumed).
+The
+.BR buffer
+field is a pointer to the buffer provided by the user.
+
+On success,
+the number of bytes received  is  returned.  If  the received signal is
+larger than the supplied payload buffer, zero is returned and the signal
+buffer size is written as a 32-bit value in the first 4 bytes of the
+payload buffer.
+.br
+.PP
+.RE
+
+.B LINX_IOCTL_REQUEST_TMO
+.br
+.RS
+Request a timeout, a signal is sent to the requesting LINX endpoint when a
+timeout has expired. The correct syntax is:
+
+.nf
+.BI "struct linx_tmo_param *" tmo_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_REQUEST_TMO ", " tmo_param ");"
+.fi
+
+.PP
+.I tmo_param
+is a
+.B linx_tmo_param
+structure:
+.RS
+.nf
+struct linx_tmo_param
+{
+	LINX_OSTIME tmo;
+	LINX_OSBUFSIZE sigsize;
+	union LINX_SIGNAL *sig;
+	LINX_OSTMOREF tmoref;
+};
+.fi
+.PP
+.RE
+.BR tmo
+is the timeout in milliseconds and the actual timeout time is rounded upward
+to the nest larger tick, the call guarantees at least the number of milliseconds
+requested,
+.BR sig
+is a pointer to the signal that will be returned when the timeout expires, if
+.BR sig
+is LINX_NIL then the default timeout signal with signal number LINX_OS_TMO_SIG
+is received instead,
+.BR sigsize
+is the size of the provided signal, if no signal is provided the value must be
+set to zero.
+
+On success, an timemout reference is returned in
+.BR tmoref .
+This reference can be used in
+.B LINX_IOCTL_CANCEL_TMO
+and
+.BR LINX_IOCTL_MODIFY_TMO .
+.RE
+.PP
+
+.B LINX_IOCTL_CANCEL_TMO
+.br
+.RS
+Cancel a pending timeout, the correct syntax is:
+
+.nf
+.BI "struct linx_tmo_param *" tmo_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_CANCEL_TMO ", " tmo_param ");"
+.fi
+
+.PP
+.I tmo_param
+is a
+.B linx_tmo_param
+structure:
+.RS
+.nf
+struct linx_tmo_param
+{
+	LINX_OSTIME tmo;
+	LINX_OSBUFSIZE sigsize;
+	union LINX_SIGNAL *sig;
+	LINX_OSTMOREF tmoref;
+};
+.fi
+.PP
+.RE
+.BR tmo ", " sigsize " and " sig
+are ignored,
+.BR tmoref
+is used to identify which timeout is to be canceled, it is guaranteed that
+the timeout signal cannot be received after cancellation.
+.RE
+.PP
+
+.B LINX_IOCTL_MODIFY_TMO
+.br
+.RS
+Modifies a pending timeout, the correct syntax is:
+
+.nf
+.BI "struct linx_tmo_param *" tmo_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_MODIFY_TMO ", " tmo_param ");"
+.fi
+
+.PP
+.I tmo_param
+is a
+.B linx_tmo_param
+structure:
+.RS
+.nf
+struct linx_tmo_param
+{
+	LINX_OSTIME tmo;
+	LINX_OSBUFSIZE sigsize;
+	union LINX_SIGNAL *sig;
+	LINX_OSTMOREF tmoref;
+};
+.fi
+.PP
+.RE
+.BR sigsize " and " sig
+are ignored,
+.BR tmoref
+is used to identify which timeout is to be modified,
+.BR tmo
+is the new timeout value.
+.RE
+.PP
+
+.B LINX_IOCTL_REQUEST_NEW_LINK
+.br
+.RS
+Request a signal when a new link is available, the correct syntax is:
+
+.nf
+.BI "struct linx_new_link_param *" new_link_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_REQUEST_NEW_LINK ", " new_link_param ");"
+.fi
+
+.PP
+.I new_link_param
+is a
+.B linx_new_link_param
+structure:
+.RS
+.nf
+struct linx_new_link_param
+{
+	uint32_t token;
+	uint32_t new_link_ref;
+};
+.fi
+.PP
+.RE
+.BR token
+is passed to and from the LINX kernel module keeping track of which links the caller
+already have been notified about, the
+.BR token
+value is ignored the first time a LINX endpint requests a new link signal. The
+.BR token
+received in the new link signal should then be used in the next new link signal
+request.
+.BR new_link_ref
+is used to cancel a pending new link signal request.
+
+The syntax of the new link signal received when a new link is available is:
+
+.RS
+.nf
+struct linx_new_link {
+	LINX_SIGSELECT signo;
+	LINX_NLTOKEN token;
+	int name;
+	int attr;
+	char buf[1];
+};
+.fi
+.RE
+
+.BR signo
+is LINX_OS_NEW_LINK_SIG,
+.BR token
+is the token value to be used in the next request for a new link signal,
+.BR name
+is the offset into
+.BR buf
+where the name of the new link is stored, the name is null terminated,
+.BR attr
+is the offset into
+.BR buf
+where the attributes, if any, of the link are stored, the attribute string
+is null terminted,
+.BR buf
+is a character buffer containg the name and the attributes, if any, of the link.
+
+.RE
+.PP
+
+
+.B LINX_IOCTL_CANCEL_NEW_LINK
+.br
+.RS
+Cancels a pending new link signal request, the correct syntax is:
+
+.nf
+.BI "struct linx_new_link_param *" new_link_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_CANCEL_NEW_LINK ", " new_link_param ");"
+.fi
+
+.PP
+.I new_link_param
+is a
+.B linx_new_link_param
+structure:
+.RS
+.nf
+struct linx_new_link_param
+{
+	uint32_t token;
+	uint32_t new_link_ref;
+};
+.fi
+.PP
+.RE
+.BR token
+is ignored,
+.BR new_link_ref
+is used to identify which pending new link signal request is to be cancelled, after the
+cancellation it is guarnateed that no more new link signals can be received.
+.RE
+.PP
+
+.B LINX_IOCTL_HUNTNAME
+.br
+.RS
+Sets the name of a LINX socket
+.B sd
+and returns its binary LINX endpoint identifier, the spid. The correct syntax is:
+
+.nf
+.BI "struct linx_huntname *" huntname ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_HUNTNAME ", " huntname ");"
+.fi
+
+.PP
+.I huntname
+is a
+.B linx_huntname
+structure:
+.RS
+.nf
+struct linx_huntname
+{
+        LINX_SPID spid;
+        size_t    namelen; 
+        char     *name;    
+};
+.fi
+.PP
+.RE
+.BR namelen
+is the size in bytes of the string 
+.BR name
+that contains the name to assign to the socket. 
+On success,
+.BR spid
+is set to the spid assigned to the LINX socket.
+.br
+.PP
+.RE
+
+.B LINX_IOCTL_HUNT
+.br
+.RS
+Hunts for a LINX endpoint (that has been assigned a name) to obtain
+its spid. The correct syntax is:
+
+.nf
+.BI "struct linx_hunt_param *" hunt_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_HUNT ", " hunt_param ");"
+.fi
+.br
+.PP
+.I hunt_param
+is a 
+.B linx_hunt_param
+structure:
+.PP
+.RS
+.nf
+struct linx_hunt_param
+{
+        LINX_OSBUFSIZE     sigsize;
+        union LINX_SIGNAL *sig;     
+        LINX_SPID          from;    
+        size_t             namelen; 
+        char              *name;                                    
+};
+.fi
+.PP
+.RE
+The
+.BR sig
+parameter optionally holds a signal of size
+.BR sigsize
+to be received when the
+other LINX socket is available. If no signal (NULL) is provided,
+the LINX default hunt signal of type
+.B LINX_OS_HUNT_SIG
+will be used.
+The
+.BR from
+parameter shall be set to the owner of the hunt. In the normal
+case, this is the spid of the LINX socket performing the hunt call.
+If the spid associated with a different LINX socket is provided,
+the hunt can be cancelled by closing that socket. The hunt signal
+is always sent to the LINX socket performing the hunt call.
+The
+.BR namelen
+is the size of the string
+.BR name
+that contains the name of the LINX endpoint to be hunted for.
+.RE
+.PP
+
+.B LINX_IOCTL_ATTACH
+.br
+.RS
+Attaches to a LINX endpoint in order to supervise it, i.e. to get an
+attach signal if it becomes unavailable. The correct syntax is:
+.br
+
+.nf
+.BI "struct linx_attach_param *" attach_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_ATTACH ", " attach_param ");"
+.fi
+
+.br
+.PP
+.I attach_param
+is a 
+.B linx_attach_param
+structure:
+.PP
+.RS
+.nf
+struct linx_attach_param
+{
+        LINX_SPID          spid;   
+        LINX_OSBUFSIZE     sigsize;                                
+        union LINX_SIGNAL *sig;    
+        LINX_OSATTREF      attref; 
+};
+.fi
+.PP
+.RE
+The
+.BR spid
+field is the spid of the LINX endpoint to supervise.
+The
+.BR sig
+parameter optionally holds a LINX signal of size
+.BR sigsize
+to be received when the supervised LINX endpoint becomes unavailable.
+If no signal (NULL) is provided, the LINX default attach signal of
+type
+.B LINX_OS_ATTACH_SIG
+will be used.
+.br
+
+On success, an attach reference is returned in
+.BR attref.
+This reference can be used in
+.B LINX_IOCTL_DETACH
+later.
+.RE
+.PP
+
+.B LINX_IOCTL_DETACH
+.br
+.RS
+Detaches from a supervised LINX endpoint, i.e. stops supervising it.
+The correct syntax is:
+.RE
+
+.RS
+.nf
+.BI "struct linx_detach_param *" detach_param ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_DETACH ", " detach_param ");"
+.fi
+.br
+.PP
+The
+.I detach_param
+parameter is a 
+.B struct linx_detach_param
+with the following fields:
+.PP
+.RS
+.nf
+struct linx_detach_param
+{
+        LINX_OSATTREF  attref;
+}
+.fi
+.br
+.PP
+.RE
+The
+.BR attref
+field is an attach reference returned from a
+.BR LINX_IOCTL_ATTACH
+call.
+.RE
+.PP
+
+.B LINX_IOCTL_SET_RECEIVE_FILTER
+.br
+.RS
+Sets up a receive filter prior to a
+.BR select (2)
+call. The correct syntax is:
+.RE
+
+.RS
+.nf
+.BI "struct linx_receive_filter_param *" rfp ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_SET_RECEIVE_FILTER ", " rfp ");"
+.fi
+.br
+.PP
+.I rfp
+is a
+.B linx_receive_filter_param
+structure:
+.PP
+.RS
+.nf
+struct linx_receive_filter_param
+{
+        LINX_SPID             from;          
+        LINX_OSBUFSIZE        sigselect_size;
+        const LINX_SIGSELECT *sigselect;     
+};
+.fi
+.br
+.PP
+.RE
+The
+.B from
+parameter specifies that only signals from a specific spid should be received and
+.B sigselect
+is an array of
+.B LINX_SIGSELECT
+numbers to be received. The first position in the array contains the number of
+entries in the list that follows. If the first position is set to a negative
+count, all LINX signals except those listed will be received. The size of
+the array is
+.B sigselect_size.
+.RE
+.PP
+
+.B LINX_IOCTL_REGISTER_LINK_SUPERVISOR
+.br
+.RS
+This command is now obsolete; use the LINX_IOCTL_REQUEST_NEW_LINK instead.
+.RE
+
+.B LINX_IOCTL_UNREGISTER_LINK_SUPERVISOR
+.br
+.RS
+This command is now obsolete; use the LINX_IOCTL_CANCEL_NEW_LINK instead.
+.RE
+.PP
+
+.B LINX_IOCTL_VERSION
+.br
+.RS
+Returns the version of the LINX kernel module. The correct syntax is:
+.RE
+
+.RS
+.nf
+.BI "unsigned int " version ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_VERSION ", &" version ");"
+.fi
+.br
+.PP
+On success, the
+.BR version
+parameter contains the version of the LINX kernel module.
+The LINX version number is a 32-bit number composed of an 8-bit major version,
+an 16-bit minor version, and a 8-bit seq (patch) number.
+.fi
+.br
+.RE
+.PP
+
+
+.B LINX_IOCTL_INFO
+.br
+.RS
+Retrieves information from the LINX kernel module.
+The correct syntax is:
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.IB error " = ioctl(" sd ", " LINX_IOCTL_INFO ", &" info ");"
+.fi
+.br
+.PP
+The
+.B info
+parameter is a
+.B struct linx_info
+with the following fields:
+.PP
+.RS
+.nf
+struct linx_info
+{
+        int    type;
+        void  *type_spec;
+};
+.fi
+.br
+.PP
+.RE
+The
+.BR type
+field indicates the requested type of information and
+.BR type_spec
+is a pointer to a struct that will contain input and return parameters.
+.br
+
+Note that information retrieved with LINX_IOCTL_INFO may have become
+inaccurate when used in a subsequent call.
+The application must be prepared to handle errors related to this.
+.br
+
+The different kinds of information that
+can be retrieved from the LINX kernel module are:
+.br
+
+.B LINX_INFO_SUMMARY
+.br
+.RS
+.br
+Provides a summary of the most important information from the LINX
+kernel module.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_summary " info_summary ";"
+.br
+.BI "info.type = " LINX_INFO_SUMMARY ";"
+.br
+.BI "info.type_spec = " &info_summary ";"
+.fi
+.br
+.PP
+The 
+.B linx_info_summary
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_summary
+{
+       int no_of_local_sockets;
+       int no_of_remote_sockets;
+       int no_of_link_sockets;
+       int no_of_pend_attach;
+       int no_of_pend_hunt;
+       int no_of_queued_signals;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B no_of_local_sockets
+field is the number of LINX sockets open locally,
+.B no_of_remote_sockets
+is the number of internal sockets open that have been created by the LINX
+kernel module to represent remote LINX endpoints.
+The
+.B no_of_link_sockets
+field is the number of open sockets representing LINX links to other nodes.
+The
+.B no_of_pend_attach
+field is the number of pending attaches,
+.B no_of_pend_hunt
+is the number of pending hunts and
+.B no_of_queued_signals
+is the number of queued signals.
+.RE
+.br
+
+.B LINX_INFO_SOCKETS
+.br
+.RS
+.br
+Returns the number of open LINX sockets and their LINX endpoint identifiers (spids).
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_sockets " info_sockets ";"
+.br
+.BI "info.type = " LINX_INFO_SOCKETS ";"
+.br
+.BI "info.type_spec = " &info_sockets ";"
+.fi
+.br
+.PP
+The
+.B linx_info_sockets
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_sockets
+{
+        LINX_OSBOOLEAN local;
+        LINX_OSBOOLEAN remote;
+        LINX_OSBOOLEAN link;
+        int            buffer_size;
+        int            no_of_sockets;
+        LINX_SPID     *buffer;
+};
+.fi
+.br
+.PP
+.RE
+If
+.B local
+is true, local sockets are included in the output, if
+.B remote
+is true, remote sockets are included and if
+.B link
+is true, sockets representing LINX links are included.
+The number of LINX sockets matching the search is returned in
+.BR no_of_sockets
+and the array of spids is returned in the provided
+.BR buffer "."
+of size
+.B buffer_size
+bytes. If the provided buffer is too small, not all sockets
+will be included.
+.RE
+.br
+
+.B LINX_INFO_TYPE
+.br
+.RS
+.br
+Returns the type of a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_type " info_type ";"
+.br
+.BI "info.type = " LINX_INFO_TYPE ";"
+.br
+.BI "info.type_spec = " &info_type ";"
+.fi
+.br
+.PP
+The
+.B linx_info_type
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_type
+{
+        LINX_SPID  spid;
+        int        type;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the type is
+requested. The type is returned in
+.BR type "."
+A LINX endpoint can be of types:
+.BR LINX_TYPE_UNKNOWN ","
+.BR LINX_TYPE_LOCAL ","
+.BR LINX_TYPE_REMOTE ","
+.BR LINX_TYPE_LINK ","
+.B LINX_TYPE_ILLEGAL
+or
+.BR LINX_TYPE_ZOMBIE "."
+.RE
+.br
+
+.B LINX_INFO_STATE
+.br
+.RS
+.br
+Returns the state of a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_state " info_state ";"
+.br
+.BI "info.type = " LINX_INFO_STATE ";"
+.br
+.BI "info.type_spec = " &info_state ";"
+.fi
+.br
+.PP
+The
+.B linx_info_state
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_state
+{
+        LINX_SPID  spid;
+        int        state;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the state is
+requested. The state is returned in
+.BR state "."
+A LINX socket can be in states:
+.BR LINX_STATE_UNKNOWN ","
+.BR LINX_STATE_RUNNING ","
+.BR LINX_STATE_RECV
+or
+.BR LINX_STATE_POLL "."
+.RE
+.br
+
+
+.B LINX_INFO_FILTERS
+.br
+.RS
+.br
+Returns information about the receive filters set up by a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_filters " info_filters ";"
+.br
+.BI "info.type = " LINX_INFO_FILTERS ";"
+.br
+.BI "info.type_spec = " &info_filters ";"
+.fi
+.br
+.PP
+The
+.B linx_info_filters
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_filters
+{
+        LINX_SPID       spid;           
+        LINX_SPID       from_filter;
+        int             buffer_size;
+        int             no_of_sigselect;
+        LINX_SIGSELECT *buffer;         
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the receive filter
+is requested. If the endpoint has setup a receive filter only accepting
+signals from a specific LINX endpoint, the spid of that endpoint is returned in
+.BR from_filter "."
+The number of LINX_SIGSELECT signal numbers in the receive filter
+is returned in
+.BR no_of_sigselect "."
+A copy of the filter of the LINX endpoint is returned in
+.BR buffer "."
+The first element of the filter is the amount of LINX_SIGSELECT that follow it.
+.br
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+signal numbers in the filter are included. It is possible to know whether all
+LINX_SIGSELECT were copied to the
+.B buffer
+array by comparing its first element with
+.BR no_of_sigselect "."
+.RE
+.br
+
+.B LINX_INFO_RECV_QUEUE
+.br
+.RS
+.br
+Returns the receive queue of a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_recv_queue " info_recv_queue ";"
+.br
+.BI "info.type = " LINX_INFO_RECV_QUEUE ";"
+.br
+.BI "info.type_spec = " &info_recv_queue ";"
+.fi
+.br
+.PP
+The
+.B linx_info_recv_queue
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_recv_queue
+{
+        LINX_SPID                spid;           
+        int                      buffer_size;    
+        int                      no_of_signals;  
+        struct linx_info_signal *buffer;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the receive queue is requested.
+The number of signals in the queue is returned in
+.BR no_of_signals "."
+An array with queue information is returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+signals are included.
+The
+.B linx_info_signal
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_signal
+{
+        LINX_SIGSELECT signo;
+        int            size; 
+        LINX_SPID      from; 
+};
+.fi
+.br
+.PP
+.RE
+The
+.B signo
+field holds the signal number,
+.B size
+is the size in bytes of the signal and
+.B from
+is the spid of the sending LINX endpoint. 
+.RE
+.br
+
+.B LINX_INFO_RECV_QUEUE_2
+.br
+.RS
+.br
+Returns the receive queue of a LINX endpoint, with information about
+OOB messages in queue.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_recv_queue_2 " info_recv_queue ";"
+.br
+.BI "info.type = " LINX_INFO_RECV_QUEUE_2 ";"
+.br
+.BI "info.type_spec = " &info_recv_queue ";"
+.fi
+.br
+.PP
+The
+.B linx_info_recv_queue
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_recv_queue_2
+{
+        LINX_SPID  spid;           
+        int        buffer_size;    
+        int        no_of_signals;  
+        char      *buffer;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the receive queue is
+requested.
+The number of signals in the queue is returned in
+.BR no_of_signals "."
+An array with queue information is returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+signals are included.
+The
+.B linx_info_signal_2
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_signal_2
+{
+        LINX_SIGSELECT signo;
+        int            size; 
+        LINX_SPID      from; 
+        uint32_t       flags;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B signo
+field holds the signal number,
+.B size
+is the size in bytes of the signal and
+.B from
+is the spid of the sending LINX endpoint.
+.B flags
+specifies the type of transmission. Values of this argument are formed by
+logically OR'ing zero or more of the following flags:
+
+.B MSG_OOB
+A signal sent out-of-band.
+.RE
+.br
+
+
+.B LINX_INFO_PEND_ATTACH
+.br
+.RS
+.br
+Returns information about pending attaches 
+.B from
+or
+.B to
+a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_pend_attach " info_pend_attach ";"
+.br
+.BI "info.type = " LINX_INFO_PEND_ATTACH ";"
+.br
+.BI "info.type_spec = " &info_pend_attach ";"
+.fi
+.br
+.PP
+The
+.B linx_info_pend_attach
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_pend_attach
+{
+        LINX_SPID                spid;      
+        int                      from_or_to;
+        int                      buffer_size;
+        int                      no_of_attaches;
+        struct linx_info_attach *buffer;        
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which attach information is
+requested. If
+.B from_or_to
+is set to 
+.B LINX_ATTACH_FROM,
+information about attaches from the spid is returned. If it is set to
+.B LINX_ATTACH_TO,
+information about attaches to the spid is returned. The number
+of attaches to/from the
+.B spid
+is returned in
+.BR no_of_attaches ","
+Information about the attaches are returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+attaches are included.
+The
+.B linx_info_attach
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_attach
+{
+        LINX_SPID               spid;  
+        LINX_OSATTREF           attref;
+        struct linx_info_signal attach_signal;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+is the identifier of the LINX endpoint that has attached
+or has been attached to (depending on what
+.B from_or_to
+is set to). The
+.B attref
+field is the attach reference and
+.B attach_signal
+is the attach signal.
+.RE
+.br
+
+
+.B LINX_INFO_PEND_HUNT
+.br
+.RS
+.br
+Returns information about pending hunts issued from any LINX endpoint.
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_pend_hunt " info_pend_hunt ";"
+.br
+.BI "info.type = " LINX_INFO_PEND_HUNT ";"
+.br
+.BI "info.type_spec = " &info_pend_hunt ";"
+.fi
+.br
+.RE
+
+The
+.B linx_info_pend_hunt
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_pend_hunt
+{
+        LINX_SPID              spid;          
+        int                    buffer_size;   
+        int                    strings_offset;
+        int                    no_of_hunts;     
+        struct linx_info_hunt *buffer;          
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which hunt information is requested.
+The number of pending hunts is returned in
+.B no_of_hunts
+and information about each pending hunt is returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+hunts are included.
+The
+.B strings_offset
+is the offset into the
+.BR buffer
+where the name strings are stored. Each
+.B linx_info_hunt
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_hunt
+{
+        struct linx_info_signal hunt_signal;
+        LINX_SPID               owner;      
+        char                   *hunt_name;  
+};
+.fi
+.br
+.PP
+.RE
+The
+.B owner
+field is the owner of the pending hunt and
+.B hunt_name
+is a string containing the name hunted for. The
+.B hunt_signal
+is the hunt signal. The
+.B linx_info_signal
+structure is described under
+.BR LINX_INFO_RECV_QUEUE "."
+.RE
+.br
+
+
+.B LINX_INFO_PEND_TMO
+.br
+.RS
+.br
+Returns information about pending timeouts issued from any LINX endpoint.
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_pend_tmo " info_pend_tmo ";"
+.br
+.BI "info.type = " LINX_INFO_PEND_TMO ";"
+.br
+.BI "info.type_spec = " &info_pend_tmo ";"
+.fi
+.br
+.RE
+
+The
+.B linx_info_pend_tmo
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_pend_tmo
+{
+        LINX_SPID             spid;
+        int                   buffer_size;
+        int                   no_of_timeouts;
+        struct linx_info_tmo  *buffer;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which timeout information
+is requested. The number of pending timeouts is returned in
+.B no_of_timeouts
+and information about each pending timeout is returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the buffer is too small, not all 
+timeouts are included. Each
+.B linx_info_tmo
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_tmo
+{
+        LINX_OSTIME             tmo;
+        LINX_OSTMOREF           tmoref;
+        struct linx_info_signal tmo_signal;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B tmo
+field is the remaining time and
+.B tmoref
+is the timeout reference. The
+.B tmo_signal
+holds the timeout signal information.
+.RE
+.br
+
+
+.B LINX_INFO_SIGNAL_PAYLOAD
+.br
+.RS
+.br
+Returns the payload of a signal owned by a LINX endpoint.
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_signal_payload " info_signal_payload ";"
+.br
+.BI "info.type = " LINX_INFO_SIGNAL_PAYLOAD ";"
+.br
+.BI "info.type_spec = " &info_signal_payload ";"
+.fi
+.br
+.RE
+
+The
+.B linx_info_signal_payload
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_signal_payload
+{
+        LINX_SPID               spid;       
+        int                     buffer_size;
+        struct linx_info_signal signal;       
+        int                     payload_size; 
+        char                   *buffer;       
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint owning the signal and
+.B signal
+is a 
+.B linx_info_signal
+structure returned from a previous LINX_INFO call.
+The signal buffer will be returned in the provided
+.BR buffer "."
+The
+.B buffer_size
+is the size in bytes of the buffer. If the provided buffer is too small, only the
+beginning of the signal buffer is returned. The
+.B payload_size
+shows the size in bytes of the returned signal payload. If the provided buffer is
+larger than the signal payload, 
+.B payload_size
+will be less than
+.BR buffer_size "."
+If no signal payload matching the
+.B signal
+the
+.B payload_size
+will be set to zero.
+.RE
+.br
+
+
+.B LINX_INFO_NAME
+.br
+.RS
+.br
+Returns the name of a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_name " info_name ";"
+.br
+.BI "info.type = " LINX_INFO_NAME ";"
+.br
+.BI "info.type_spec = " &info_name ";"
+.fi
+.br
+.PP
+The
+.B linx_info_name
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_name
+{
+        LINX_SPID spid;   
+        int       namelen;
+        char     *name;   
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the name is requested.
+The 
+.B namelen 
+field is the length of the provided
+.B name
+buffer in which the name is returned.
+If the LINX socket endpoint has not been assigned a name yet
+zero is returned and
+.B name
+is set to the empty string.
+.RE
+.br
+
+
+.B LINX_INFO_OWNER
+.br
+.RS
+.br
+Returns the process (PID) that owns a LINX endpoint.
+.RE
+
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_owner " info_owner ";"
+.br
+.BI "info.type = " LINX_INFO_OWNER ";"
+.br
+.BI "info.type_spec = " &info_owner ";"
+.fi
+.br
+.PP
+The
+.B linx_info_owner
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_owner
+{
+        LINX_SPID spid; 
+        pid_t     owner;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+field is the identifier of the LINX endpoint for which the information
+is requested. On success, the PID of the
+owning process is returned in
+.BR owner "."
+.RE
+.br
+
+
+.B LINX_INFO_STAT
+.br
+.RS
+.br
+Returns statistics for a LINX endpoint. This requires that the LINX kernel
+module has been compiled with the "SOCK_STAT=yes" setting.
+.RE
+.RS
+.nf
+.BI "struct linx_info " info ";"
+.br
+.BI "struct linx_info_stat " info_stat ";"
+.br
+.BI "info.type = " LINX_INFO_STAT ";"
+.br
+.BI "info.type_spec = " &info_stat ";"
+.fi
+.br
+.PP
+The
+.B linx_info_stat
+structure is defined as:
+.PP
+.RS
+.nf
+struct linx_info_stat
+{
+        LINX_SPID spid;
+
+        uint64_t no_sent_local_signals;
+        uint64_t no_recv_local_signals;
+        uint64_t no_sent_local_bytes;
+        uint64_t no_recv_local_bytes;
+
+        uint64_t no_sent_remote_signals;
+        uint64_t no_recv_remote_signals;
+        uint64_t no_sent_remote_bytes;
+        uint64_t no_recv_remote_bytes;
+
+        uint64_t no_sent_signals;
+        uint64_t no_recv_signals;
+        uint64_t no_sent_bytes;
+        uint64_t no_recv_bytes;
+
+        uint64_t no_queued_bytes;
+        uint64_t no_queued_signals;
+};
+.fi
+.br
+.PP
+.RE
+The
+.B spid
+is the identifier of the LINX endpoint for which statistics is required.
+If the LINX kernel module has not been compiled with "SOCK_STAT=yes",
+ioctl returns -1 and errno is set to ENOSYS.
+.RE
+.br
+
+
+.SH KNOWN BUGS
+None.
+.SH "SEE ALSO"
+Generic LINX for Linux man-page:
+.br
+.BR linx "(7) (this document)"
+.br
+
+LINX API man-pages:
+.br
+.BR linx.h "(3), "
+.BR linx_types.h "(3), "
+.br
+.BR linx_alloc "(3), "
+.BR linx_attach "(3), "
+.BR linx_cancel_tmo "(3), "
+.BR linx_close "(3), "
+.br
+.BR linx_detach "(3), "
+.BR linx_free_buf "(3), "
+.BR linx_free_name "(3), "
+.BR linx_free_stat "(3), "
+.br
+.BR linx_get_descriptor "(3), "
+.BR linx_get_name "(3), "
+.BR linx_get_spid "(3), "
+.br
+.BR linx_get_stat "(3), "
+.BR linx_hunt "(3), "
+.BR linx_hunt_from "(3), "
+.BR linx_modify_tmo "(3), "
+.br
+.BR linx_open "(3), "
+.BR linx_receive "(3), "
+.BR linx_receive_from "(3), "
+.br
+.BR linx_receive_w_tmo "(3), "
+.BR linx_request_tmo "(3), "
+.BR linx_send "(3), "
+.BR linx_send_w_opt "(3), "
+.br
+.BR linx_send_w_s "(3), "
+.BR linx_sender "(3), "
+.BR linx_set_sigsize "(3), "
+.BR linx_sigattr "(3), "
+.BR linx_sigsize "(3)"
+.br
+
+Related LINX applications
+.br
+.BR linxcfg "(1), "
+.BR linxdisc "(8), "
+.BR linxdisc.conf  "(5), "
+.BR linxstat "(1), "
+.BR mkethcon "(1), "
+.BR mklink "(1), "
+.BR mktcpcon "(1), "
+.BR rmethcon "(1), "
+.BR rmlink "(1), "
+.BR rmtcpcon "(1)"
+.br
+
+Related generic Linux man-pages:
+.br
+.BR socket "(2), " close "(2), "
+.BR sendto "(2), " sendmsg "(2), "
+.BR recvfrom "(2), " recvmsg "(2), "
+.BR poll "(2), " select "(2), "
+.BR ioctl "(2) "
+
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

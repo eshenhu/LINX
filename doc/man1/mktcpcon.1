@@ -1,0 +1,84 @@
+.TH MKTCPCON 1 "2010-07-02" 1.0 "LINX"
+.SH NAME
+mktcpcon \- create LINX TCP/IP connections.
+.SH SYNOPSIS
+.B mktcpcon [OPTIONS] <connection>
+
+.SH DESCRIPTION
+Create a LINX TCP/IP connection to a remote node.
+
+.SH OPTIONS
+
+.IP "-h, --help"
+Display help and exit.
+
+.IP "-i, --ipaddr=<IP address>"
+The IP address to connect to, e.g. 192.168.0.12.
+
+.IP "-I, --ipv6addr=<IPv6 address>%<iface>"
+The IPv6 address to connect to, e.g. fe80::218:8bff:fe1e:2eef, followed by % as
+a delimiter and then the interface the connection should be created on.
+
+.IP "-t, --live_tmo=<size>"
+The live_tmo parameter is the time in milliseconds between every heartbeat
+that is used to detect if the connection has gone down. The default value is
+1000 ms.
+
+.IP "-n, --use_nagle=<bool>"
+Set to 1 if nagle algorithm shall be used on the socket for the connection.
+Default is off.
+
+.IP "-s, --silent"
+Silent mode.
+
+.SH FILES
+None.
+
+.SH DIAGNOSTICS
+None.
+
+.SH KNOWN BUGS
+None.
+
+.SH EXAMPLES
+.nf
+mktcpcon --ipaddr=192.168.0.12 tcpcon_A
+mktcpcon --ipv6addr=fe80::218:8bff:fe1e:2eef%eth0 tcpcon_A
+.fi
+
+.SH "SEE ALSO"
+.BR linx "(7), "
+.BR linxcfg "(1), "
+.BR mklink "(1), "
+.BR rmtcpcon "(1)"
+
+.SH AUTHOR
+Enea LINX team
+
+.SH COPYRIGHT
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

@@ -1,0 +1,183 @@
+.TH LINX_TYPES.H 3 "2006-09-06" 1.0 "LIBLINX"
+.SH NAME
+linx_types.h - data types for LINX
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.SH DESCRIPTION
+In addition to the definitions below, the
+.BR linx_types.h
+includes the system headers
+.BR <stdint.h> ", "
+.BR <stdlib.h>
+and
+.BR <linux/types.h> "."
+.br
+
+This
+.BR linx_types.h
+header may be included automatically by the 
+.BR linx.h
+header file. 
+.br
+
+The header file contains the following definitions of LINX types and constants:
+.TP 7
+.B LINX
+The LINX handle, returned from
+.BR linx_open "(3)."
+It is used to access the LINX endpoint with all other LINX API fuctions.
+
+.TP 7
+.B LINX_FALSE
+defined to 0.
+
+.TP 7
+.B LINX_TRUE
+defined to 1.
+
+.TP 7
+.B LINX_ILLEGAL_ATTREF
+defined to ((LINX_OSATTREF)0). It can be returned instead of
+a valid LINX_OSATTREF value, e.g. from
+.BR linx_attach "(3)."
+
+
+.TP 7
+.B LINX_ILLEGAL_SPID
+defined to ((LINX_SPID)0). It can be returned instead of
+a valid LINX_SPID value, e.g. from
+.BR linx_get_sped "(3)."
+
+.TP 7
+.B LINX_NIL
+defined to ((union LINX_SIGNAL *) 0). This null pointer value
+indicates that a signal pointer no longer points
+to any buffer, e.g. after freeing the signal buffer.
+
+
+.TP 7
+.B LINX_OS_ATTACH_SIG
+defined to ((LINX_SIGSELECT)252). This is the reserved signal number
+of the default attach signal used if the application does
+not provide a signal with the 
+.BR linx_attach "(3)"
+call.
+
+.TP 7
+.B LINX_OS_HUNT_SIG
+defined to ((LINX_SIGSELECT)251). This is the reserved signal number
+of the default hunt signal used if the application does
+not provide a signal with the 
+.BR linx_hunt "(3)"
+call.
+
+
+.TP 7
+.B LINX_OSATTREF
+A uint32_t used for attach references.
+
+.TP 7
+.B LINX_OSBOOLEAN
+An int used for boolean operations.
+
+.TP 7
+.B LINX_OSBUFSIZE
+An ssize_t used for signal buffer sizes.
+
+.TP 7
+.B LINX_OSTIME
+A uint32_t used for time in micro-seconds (us).
+
+.TP 7
+.B LINX_SIGSELECT
+A uint32_t used for signal numbers.
+
+.TP 7
+.B LINX_SPID
+A uint32_t used for LINX endpoint binary identifiers (also called spid).
+
+.TP 7
+.B LINX_SIG_OPT_END
+A define used as endmark in the
+.I taglist
+parameter list, passed in the
+.BR linx_send_w_opt "(3)"
+call.
+
+.TP 7
+.B LINX_SIG_OPT_OOB
+A define used for OOB signaling in the 
+.I taglist
+parameter list, passed in the
+.BR linx_send_w_opt "(3)"
+call.
+
+.TP 7
+.B LINX_SIG_ATTR_OOB
+Is an attribute of a received signal that was sent OOB. Defined to 1.
+
+.P
+The following LINX definition is not explicitely done in this header file, 
+but is used in the LINX API.
+.br
+
+.TP 7
+.BI "union LINX_SIGNAL"
+is an opaque structure, containing any signal buffer of
+any size, with a 32-bit signal number of type 
+.B LINX_SIGSELECT
+in the first four bytes. This signal number can be accessed as
+the 
+.I sig_no
+struct member of the signal buffer. 
+The application allocates various sized signal buffers with
+.BR linx_alloc "(3), "
+which returns a 
+.BI "union LINX_SIGNAL *" "."
+.br
+
+
+
+
+
+.SH SEE ALSO
+.BR linx "(7), "
+.BR linx_alloc "(3), "
+.BR linx_attach "(3), "
+.BR linx_get_spid "(3), "
+.BR linx_hunt "(3), "
+.BR linx_open "(3)"
+
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

@@ -1,0 +1,87 @@
+.TH GWCMD 1 "2009-02-27" 1.0 "LINX"
+.SH NAME
+linxgwcmd \- Gateway Command tool example
+.SH SYNOPSIS
+.B linxgwcmd [OPTIONS]
+
+.SH DESCRIPTION
+Gateway Command tool example, can be used to find and test gateway servers on a 
+network.
+.SH OPTIONS
+
+.IP "-a <auth>"
+Use <auth> as authentication string, which should be in "user:passwd" form
+
+.IP "-b <brc_addr>"
+Use <brc_addr> as broadcast string, which should be in "udp://*:<port>" form, 
+where <port> should be the port number. Default broadcast string is 
+"udp://*:21768"
+
+.IP "-c <name>"
+Use <name> as the client's name (default "gw_client")
+
+.IP   "-e[<n>][,<b>]"
+Echo test to an OSE Gateway use <n> as number of loops (default 10) and <b> for
+number of bytes/chunk (default 4)
+
+.IP "-h"
+Print help
+
+.IP "-l[<t>][,<n>]"
+List Gateways use <t> as timeout value (default is 5 secs) and <n> for max items
+ (default lists all) -l25,1 => look for Gateways in 25 secs and list only the 
+first found
+
+.IP   "-p <proc>"    
+Hunt for process <proc>
+
+.IP   "-s <url/name>"
+Connect to a OSE GateWay server using either the servers url or its name
+
+.SH FILES
+None.
+
+.SH DIAGNOSTICS
+None.
+
+.SH KNOWN BUGS
+None.
+
+.SH EXAMPLES
+.nf
+linxgwcmd
+.fi
+
+.SH "SEE ALSO"
+.BR linxgws "(8)"
+
+.SH AUTHOR
+Enea LINX team
+
+.SH COPYRIGHT
+Copyright (c) 2009, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

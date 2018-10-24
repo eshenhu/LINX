@@ -1,0 +1,132 @@
+diff -crB old/libpcap-1.0.0/config.sub new/libpcap-1.0.0/config.sub
+*** old/libpcap-1.0.0/config.sub	2003-11-18 07:30:51.000000000 +0100
+--- new/libpcap-1.0.0/config.sub	2009-03-19 17:26:59.722000000 +0100
+***************
+*** 3,9 ****
+  #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+  #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+  
+! timestamp='2003-11-03'
+  
+  # This file is (in principle) common to ALL GNU software.
+  # The presence of a machine in this file suggests that SOME GNU software
+--- 3,9 ----
+  #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+  #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+  
+! timestamp='2009-03-19'
+  
+  # This file is (in principle) common to ALL GNU software.
+  # The presence of a machine in this file suggests that SOME GNU software
+***************
+*** 241,246 ****
+--- 241,247 ----
+  	| mips | mipsbe | mipseb | mipsel | mipsle \
+  	| mips16 \
+  	| mips64 | mips64el \
++ 	| mips64octeon | mips64octeonel \
+  	| mips64vr | mips64vrel \
+  	| mips64orion | mips64orionel \
+  	| mips64vr4100 | mips64vr4100el \
+***************
+*** 314,319 ****
+--- 315,321 ----
+  	| mips-* | mipsbe-* | mipseb-* | mipsel-* | mipsle-* \
+  	| mips16-* \
+  	| mips64-* | mips64el-* \
++ 	| mips64octeon-* | mips64octeonel-* \
+  	| mips64vr-* | mips64vrel-* \
+  	| mips64orion-* | mips64orionel-* \
+  	| mips64vr4100-* | mips64vr4100el-* \
+diff -crB old/libpcap-1.0.0/gencode.c new/libpcap-1.0.0/gencode.c
+*** old/libpcap-1.0.0/gencode.c	2008-10-11 04:42:44.000000000 +0200
+--- new/libpcap-1.0.0/gencode.c	2009-03-19 17:42:03.139000000 +0100
+***************
+*** 1497,1502 ****
+--- 1497,1507 ----
+  		off_nl = -1;
+  		off_nl_nosnap = -1;
+  		return;
++ 	case DLT_LINX_INTERNAL:
++ 		off_linktype = -1;
++ 		off_nl = 12;
++ 		off_nl_nosnap = -1;
++ 		return;
+  	}
+  	bpf_error("unknown data link type %d", linktype);
+  	/* NOTREACHED */
+diff -crB old/libpcap-1.0.0/pcap/bpf.h new/libpcap-1.0.0/pcap/bpf.h
+*** old/libpcap-1.0.0/pcap/bpf.h	2008-10-11 04:42:44.000000000 +0200
+--- new/libpcap-1.0.0/pcap/bpf.h	2009-03-19 17:21:07.362000000 +0100
+***************
+*** 606,611 ****
+--- 606,615 ----
+  #define DLT_JUNIPER_FRELAY      180
+  #define DLT_JUNIPER_CHDLC       181
+  
++ #ifndef DLT_LINX_INTERNAL
++ #define DLT_LINX_INTERNAL       DLT_USER0
++ #endif
++   
+  /*
+   * Multi Link Frame Relay (FRF.16)
+   */
+diff -crB old/libpcap-1.0.0/pcap.c new/libpcap-1.0.0/pcap.c
+*** old/libpcap-1.0.0/pcap.c	2008-10-11 04:42:44.000000000 +0200
+--- new/libpcap-1.0.0/pcap.c	2009-03-19 17:22:55.577000000 +0100
+***************
+*** 623,628 ****
+--- 623,629 ----
+  	DLT_CHOICE(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, "Bluetooth HCI UART transport layer plus pseudo-header"),
+  	DLT_CHOICE(DLT_AX25_KISS, "AX.25 with KISS header"),
+  	DLT_CHOICE(DLT_IEEE802_15_4_NONASK_PHY, "IEEE 802.15.4 with non-ASK PHY data"),
++ 	DLT_CHOICE(DLT_LINX_INTERNAL, "LINX"),
+  	DLT_CHOICE_SENTINEL
+  };
+  
+diff -crB old/libpcap-1.0.0/pcap-linux.c new/libpcap-1.0.0/pcap-linux.c
+*** old/libpcap-1.0.0/pcap-linux.c	2008-10-28 02:52:19.000000000 +0100
+--- new/libpcap-1.0.0/pcap-linux.c	2009-03-20 08:17:20.041000000 +0100
+***************
+*** 1627,1632 ****
+--- 1627,1639 ----
+  		handle->linktype = DLT_LINUX_LAPD;
+  		break;
+  
++ #ifndef ARPHRD_LINX
++ #define ARPHRD_LINX 0x8911
++ #endif
++ 	case ARPHRD_LINX:
++ 		handle->linktype = DLT_LINX_INTERNAL;
++ 		break;
++ 		
+  #ifndef ARPHRD_NONE
+  #define ARPHRD_NONE	0xFFFE
+  #endif
+diff -crB old/libpcap-1.0.0/savefile.c new/libpcap-1.0.0/savefile.c
+*** old/libpcap-1.0.0/savefile.c	2008-10-11 04:42:44.000000000 +0200
+--- new/libpcap-1.0.0/savefile.c	2009-03-19 17:25:37.284000000 +0100
+***************
+*** 335,340 ****
+--- 335,343 ----
+  #define LINKTYPE_USER14		161
+  #define LINKTYPE_USER15		162
+  
++ /* LINX internal messages */
++ #define LINKTYPE_LINX_INTERNAL  LINKTYPE_USER0
++ 
+  /*
+   * For future use with 802.11 captures - defined by AbsoluteValue
+   * Systems to store a number of bits of link-layer information
+***************
+*** 790,795 ****
+--- 793,801 ----
+  	{ DLT_IBM_SP,		LINKTYPE_IBM_SP },
+  	{ DLT_IBM_SN,		LINKTYPE_IBM_SN },
+  
++ 	/* LINX internal messages */
++ 	{ DLT_LINX_INTERNAL,    LINKTYPE_LINX_INTERNAL },
++ 	
+  	/* 802.11 plus AVS radio header */
+  	{ DLT_IEEE802_11_RADIO_AVS, LINKTYPE_IEEE802_11_RADIO_AVS },
+  

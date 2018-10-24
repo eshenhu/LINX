@@ -1,0 +1,964 @@
+diff -crBN old/tcpdump-4.0.0/config.sub new/tcpdump-4.0.0/config.sub
+*** old/tcpdump-4.0.0/config.sub	2008-04-03 19:50:59.000000000 +0200
+--- new/tcpdump-4.0.0/config.sub	2009-03-19 17:56:48.443000000 +0100
+***************
+*** 3,9 ****
+  #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+  #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+  
+! timestamp='2003-11-03'
+  
+  # This file is (in principle) common to ALL GNU software.
+  # The presence of a machine in this file suggests that SOME GNU software
+--- 3,9 ----
+  #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+  #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+  
+! timestamp='2009-03-19'
+  
+  # This file is (in principle) common to ALL GNU software.
+  # The presence of a machine in this file suggests that SOME GNU software
+***************
+*** 241,246 ****
+--- 241,247 ----
+  	| mips | mipsbe | mipseb | mipsel | mipsle \
+  	| mips16 \
+  	| mips64 | mips64el \
++ 	| mips64octeon | mips64octeonel \
+  	| mips64vr | mips64vrel \
+  	| mips64orion | mips64orionel \
+  	| mips64vr4100 | mips64vr4100el \
+***************
+*** 314,319 ****
+--- 315,321 ----
+  	| mips-* | mipsbe-* | mipseb-* | mipsel-* | mipsle-* \
+  	| mips16-* \
+  	| mips64-* | mips64el-* \
++ 	| mips64octeon-* | mips64octeonel-* \
+  	| mips64vr-* | mips64vrel-* \
+  	| mips64orion-* | mips64orionel-* \
+  	| mips64vr4100-* | mips64vr4100el-* \
+diff -crBN old/tcpdump-4.0.0/ethertype.h new/tcpdump-4.0.0/ethertype.h
+*** old/tcpdump-4.0.0/ethertype.h	2008-09-01 04:44:13.000000000 +0200
+--- new/tcpdump-4.0.0/ethertype.h	2009-03-19 17:45:52.671000000 +0100
+***************
+*** 154,158 ****
+  #ifndef	ETHERTYPE_ISO
+  #define	ETHERTYPE_ISO           0xfefe  /* nonstandard - used in Cisco HDLC encapsulation */
+  #endif
+! 
+  extern const struct tok ethertype_values[];
+--- 154,161 ----
+  #ifndef	ETHERTYPE_ISO
+  #define	ETHERTYPE_ISO           0xfefe  /* nonstandard - used in Cisco HDLC encapsulation */
+  #endif
+! /* LINX support */
+! #ifndef ETHERTYPE_LINX
+! #define ETHERTYPE_LINX		0x8911
+! #endif
+  extern const struct tok ethertype_values[];
+diff -crBN old/tcpdump-4.0.0/interface.h new/tcpdump-4.0.0/interface.h
+*** old/tcpdump-4.0.0/interface.h	2008-09-01 04:44:14.000000000 +0200
+--- new/tcpdump-4.0.0/interface.h	2009-03-19 17:47:03.269000000 +0100
+***************
+*** 349,354 ****
+--- 349,357 ----
+  extern u_short in_cksum(const u_short *, register u_int, int);
+  extern u_int16_t in_cksum_shouldbe(u_int16_t, u_int16_t);
+  
++ extern void linx_external_print(const u_char *, u_int, u_int);
++ extern u_int linx_internal_print(const struct pcap_pkthdr *h, const u_char *p);
++ 
+  #ifndef HAVE_BPF_DUMP
+  struct bpf_program;
+  
+***************
+*** 384,390 ****
+  #define Gflag gndo->ndo_Gflag 
+  #define Aflag gndo->ndo_Aflag 
+  #define Bflag gndo->ndo_Bflag 
+! #define Iflag gndo->ndo_Iflag 
+  #define suppress_default_print gndo->ndo_suppress_default_print
+  #define packettype gndo->ndo_packettype
+  #define tcpmd5secret gndo->ndo_tcpmd5secret
+--- 387,394 ----
+  #define Gflag gndo->ndo_Gflag 
+  #define Aflag gndo->ndo_Aflag 
+  #define Bflag gndo->ndo_Bflag 
+! #define Iflag gndo->ndo_Iflag
+! #define bflag gndo->ndo_bflag
+  #define suppress_default_print gndo->ndo_suppress_default_print
+  #define packettype gndo->ndo_packettype
+  #define tcpmd5secret gndo->ndo_tcpmd5secret
+diff -crBN old/tcpdump-4.0.0/Makefile.in new/tcpdump-4.0.0/Makefile.in
+*** old/tcpdump-4.0.0/Makefile.in	2008-09-01 04:44:11.000000000 +0200
+--- new/tcpdump-4.0.0/Makefile.in	2009-03-19 17:48:20.959000000 +0100
+***************
+*** 26,31 ****
+--- 26,32 ----
+  # Top level hierarchy
+  prefix = @prefix@
+  exec_prefix = @exec_prefix@
++ datarootdir = @datarootdir@
+  # Pathname of directory to install the binary
+  sbindir = @sbindir@
+  # Pathname of directory to install the man page
+***************
+*** 79,85 ****
+  	print-gre.c print-hsrp.c print-icmp.c print-igmp.c \
+  	print-igrp.c print-ip.c print-ipcomp.c print-ipfc.c \
+  	print-ipx.c print-isoclns.c print-juniper.c print-krb.c \
+! 	print-l2tp.c print-lane.c print-ldp.c print-lldp.c print-llc.c \
+          print-lmp.c print-lspping.c print-lwapp.c \
+  	print-lwres.c print-mobile.c print-mpcp.c print-mpls.c print-msdp.c \
+  	print-nfs.c print-ntp.c print-null.c print-olsr.c print-ospf.c \
+--- 80,86 ----
+  	print-gre.c print-hsrp.c print-icmp.c print-igmp.c \
+  	print-igrp.c print-ip.c print-ipcomp.c print-ipfc.c \
+  	print-ipx.c print-isoclns.c print-juniper.c print-krb.c \
+! 	print-l2tp.c print-lane.c print-ldp.c print-linx.c print-lldp.c print-llc.c \
+          print-lmp.c print-lspping.c print-lwapp.c \
+  	print-lwres.c print-mobile.c print-mpcp.c print-mpls.c print-msdp.c \
+  	print-nfs.c print-ntp.c print-null.c print-olsr.c print-ospf.c \
+diff -crBN old/tcpdump-4.0.0/missing/dlnames.c new/tcpdump-4.0.0/missing/dlnames.c
+*** old/tcpdump-4.0.0/missing/dlnames.c	2003-11-19 00:09:43.000000000 +0100
+--- new/tcpdump-4.0.0/missing/dlnames.c	2009-03-19 17:49:49.282000000 +0100
+***************
+*** 132,137 ****
+--- 132,143 ----
+  #ifdef DLT_HDLC
+  	DLT_CHOICE(DLT_HDLC, "Cisco HDLC"),
+  #endif
++ #ifdef DLT_LINX
++ 	DLT_CHOICE(DLT_LINX, "Enea LINX"),
++ #endif
++ #ifdef DLT_LINX_INTERNAL
++ 	DLT_CHOICE(DLT_LINX_INTERNAL, "Enea LINX"),
++ #endif
+  	DLT_CHOICE_SENTINEL
+  };
+  
+diff -crBN old/tcpdump-4.0.0/netdissect.h new/tcpdump-4.0.0/netdissect.h
+*** old/tcpdump-4.0.0/netdissect.h	2008-09-01 04:44:15.000000000 +0200
+--- new/tcpdump-4.0.0/netdissect.h	2009-03-19 17:50:32.444000000 +0100
+***************
+*** 102,107 ****
+--- 102,108 ----
+    int ndo_Aflag;		/* print packet only in ascii observing TAB,
+  				 * LF, CR and SPACE as graphical chars
+  				 */
++   int ndo_bflag;                /* print LINX signo using given radix */
+    int ndo_Bflag;		/* buffer size */
+    int ndo_Iflag;		/* rfmon (monitor) mode */
+    int ndo_Oflag;                /* run filter code optimizer */
+diff -crBN old/tcpdump-4.0.0/print-ether.c new/tcpdump-4.0.0/print-ether.c
+*** old/tcpdump-4.0.0/print-ether.c	2008-09-01 04:44:22.000000000 +0200
+--- new/tcpdump-4.0.0/print-ether.c	2009-03-19 17:51:40.912000000 +0100
+***************
+*** 78,83 ****
+--- 78,84 ----
+      { ETHERTYPE_CFM_OLD,        "CFM (old)" },
+      { ETHERTYPE_CFM,            "CFM" },
+      { ETHERTYPE_LLDP,           "LLDP" },
++     { ETHERTYPE_LINX,           "LINX" },
+      { 0, NULL}
+  };
+  
+***************
+*** 331,337 ****
+  	case ETHERTYPE_MPLS_MULTI:
+  		mpls_print(p, length);
+  		return (1);
+! 
+  	case ETHERTYPE_LAT:
+  	case ETHERTYPE_SCA:
+  	case ETHERTYPE_MOPRC:
+--- 332,343 ----
+  	case ETHERTYPE_MPLS_MULTI:
+  		mpls_print(p, length);
+  		return (1);
+! 		
+! 	/* External LINX support */
+!         case ETHERTYPE_LINX:
+!                 linx_external_print(p, length, caplen);
+!                 return (1);
+! 		
+  	case ETHERTYPE_LAT:
+  	case ETHERTYPE_SCA:
+  	case ETHERTYPE_MOPRC:
+diff -crBN old/tcpdump-4.0.0/print-linx.c new/tcpdump-4.0.0/print-linx.c
+*** old/tcpdump-4.0.0/print-linx.c	1970-01-01 01:00:00.000000000 +0100
+--- new/tcpdump-4.0.0/print-linx.c	2009-03-19 17:53:31.347000000 +0100
+***************
+*** 0 ****
+--- 1,697 ----
++ /*
++  * Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997
++  *	The Regents of the University of California.  All rights reserved.
++  *
++  * Redistribution and use in source and binary forms, with or without
++  * modification, are permitted provided that: (1) source code distributions
++  * retain the above copyright notice and this paragraph in its entirety, (2)
++  * distributions including binary code include the above copyright notice and
++  * this paragraph in its entirety in the documentation or other materials
++  * provided with the distribution, and (3) all advertising materials mentioning
++  * features or use of this software display the following acknowledgement:
++  * ``This product includes software developed by the University of California,
++  * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
++  * the University nor the names of its contributors may be used to endorse
++  * or promote products derived from this software without specific prior
++  * written permission.
++  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
++  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
++  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++  */
++ 
++ #ifndef lint
++ static const char rcsid[] _U_ =
++ "@(#) $Header: /tcpdump/master/tcpdump/print-linx.c,v 1.138 2005/04/07 00:28:17 mcr Exp $ (LBL)";
++ #endif
++ 
++ #ifdef HAVE_CONFIG_H
++ #include "config.h"
++ #endif
++ 
++ #include <tcpdump-stdinc.h>
++ 
++ #ifdef SEGSIZE
++ #undef SEGSIZE
++ #endif
++ 
++ #include <stdio.h>
++ #include <string.h>
++ #include <sys/ioctl.h>
++ 
++ #include "interface.h"
++ #include "addrtoname.h"
++ #include "extract.h"
++ 
++ #define AF_LINX 29
++ #define LINX_INFO_NAME 2
++ 
++ struct linx_info_name {
++         uint32_t spid;    /* Spid of the LINX socket to request name on */
++         int      namelen; /* Length of the provided buffer */
++         char    *name;    /* Huntname of the spid */
++ };
++ 
++ struct linx_info {
++         int   type;      /* Type */
++         void *type_spec; /* Type specific paramter */
++ };
++ 
++ #define LINX_IOCTL_INFO \
++ _IOWR(0xf4, 7, struct linx_info)
++ 
++ #define ETH_CM_PROTOCOL_VERSION   3
++ /* from which version of the protocol feature negotiation is provided */
++ #define ETH_CM_FEAT_NEG_PROTO_VER 3
++ /* from which version of the protocol we use 32 bit addresses */
++ #define ETH_CM_32BIT_ADDRESS      3
++ 
++ /* Definitions of protocol header types. */
++ #define HDR_MAIN_SIZE 4
++ #define HDR_CONN  0x1
++ #define HDR_CONN_SIZE 16
++ #define HDR_UDATA 0x2
++ #define HDR_UDATA_SIZE 12
++ #define HDR_UDATA_FRAG_SIZE 4
++ #define HDR_FRAG  0x3
++ #define HDR_ACK	  0x4
++ #define HDR_ACK_SIZE 4
++ #define HDR_NACK  0x5
++ #define HDR_NACK_SIZE 4
++ #define HDR_NONE  0xf
++ 
++ #define RLNH_ALIGN_ANY
++ static inline void
++ hton_unaligned(const void *_h, uint32_t w, int offset)
++ {
++ 	const char *h = _h;
++ #ifdef RLNH_ALIGN_ANY
++ 	uint32_t *w32 = (uint32_t *) (h + offset);
++ 	w32[0] = htonl(w);
++ #else
++ 	uint16_t *w16 = (uint16_t *) (h + offset);
++ 	w16[0] = htons(w >> 16);
++ 	w16[1] = htons(w & 0xffff);
++ #endif
++ }
++ 
++ static inline uint32_t
++ ntoh_unaligned(const void *_h, int offset)
++ {
++ 	const char *h = _h;
++ #ifdef RLNH_ALIGN_ANY
++ 	uint32_t *w32 = (uint32_t *) (h + offset);
++ 	return ntohl(w32[0]);
++ #else
++ 	uint16_t *w16 = (uint16_t *) (h + offset);
++ 	return (ntohs(w16[0]) << 16) | ntohs(w16[1]);
++ #endif
++ }
++ 
++ static inline uint32_t
++ next(uint32_t h)
++ {
++ 	return h >> 28;
++ }
++ 
++ /* Main header */
++ /*
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  | Ver | R |	Connection  |R|	       Packet size	  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ */
++ 
++ #define MAIN_HDR_OFFSET 0
++ 
++ static inline uint32_t
++ ver(uint32_t h)
++ {
++ 	return h >> 25 & 0x07;
++ }
++ 
++ static inline uint32_t
++ connection_id(uint32_t h)
++ {
++ 	return h >> 15 & 0xff;
++ }
++ 
++ static inline uint32_t
++ packet_size(uint32_t h)
++ {
++ 	return h & 0x3fff;
++ }
++ 
++ static inline int
++ main_hdr_size(void)
++ {
++ 	return 4;
++ }
++ 
++ /* Reliable header */
++ /*
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  |R| Res.|	    Ackno	  |	    Seqno	  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ */
++ 
++ #define ACK_HDR_OFFSET 4
++ 
++ static inline uint32_t
++ get_request(uint32_t h)
++ {
++ 	return h >> 27 & 0x01;
++ }
++ 
++ static inline uint32_t
++ ackno(uint32_t h)
++ {
++ 	return (h >> 12) & 0xfff;
++ }
++ 
++ static inline uint32_t
++ seqno(uint32_t h)
++ {
++ 	return h & 0xfff;
++ }
++ 
++ static inline int
++ ack_hdr_size(void)
++ {
++ 	return 4;
++ }
++ 
++ /* User data / fragment header */
++ /*
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  |	 Reserved	  |M|	       Frag no		  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   |                          Destination                          |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   |                             Source                            |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ 
++   * User data / fragment header => Version 2
++ 
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  |	 Reserved	  |M|	       Frag no		  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   |			      Reserved				  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   |		  Dst		  |		  Src		  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ 
++   - fragments (not first fragment)
++ 
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  |	 Reserved	  |M|	       Frag no		  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ */
++ 
++ #define UDATA_HDR_OFFSET 8
++ 
++ /* Used in version 3 */
++ #define UDATA_HDR_DST_OFFSET 12
++ #define UDATA_HDR_SRC_OFFSET 16
++ 
++ /* Used in version 2 */
++ #define UDATA_HDR_ADDR_OFFSET 16
++ 
++ #define FRAG_HDR_OFFSET 8
++ 
++ static inline uint32_t
++ more(uint32_t h)
++ {
++ 	return (h & 0x8000) >> 15;
++ }
++ 
++ static inline uint32_t
++ fragno(uint32_t h)
++ {
++ 	return h & 0x7fff;
++ }
++ 
++ static inline uint32_t
++ dst(uint32_t h)
++ {
++ 	return h >> 16;
++ }
++ 
++ static inline uint32_t
++ src(uint32_t h)
++ {
++ 	return h & 0xffff;
++ }
++ 
++ static inline int
++ udata_hdr_size(uint32_t h)
++ {	
++ 	/* Frag no must be 0x7fff if not fragmented! */
++ 	return fragno(h) == 0x7fff ? HDR_UDATA_SIZE : HDR_UDATA_FRAG_SIZE;
++ }
++ 
++ static inline int
++ udata_payload_start(uint32_t h)
++ {
++ 	return main_hdr_size() + ack_hdr_size() + udata_hdr_size(h);
++ }
++ 
++ /* Nack header */
++ /*
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  |  Res  |	Count	  |  Res  |	    Seqno	  |
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ */
++ 
++ #define NACK_HDR_OFFSET (HDR_MAIN_SIZE + HDR_ACK_SIZE)
++ 
++ static inline uint32_t
++ count(uint32_t h)
++ {
++ 	return h >> 16 & 0xff;
++ }
++ 
++ static inline uint32_t
++ seqno_n(uint32_t h)
++ {
++ 	return h & 0xfff;
++ }
++ 
++ static inline int
++ nack_hdr_size(uint32_t h)
++ {
++ 	return 1 + (count(h) - 2) % 4;
++ }
++ 
++ /* Connect header */
++ /*
++   0		      1			  2		      3
++   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   | Next  | Type  |Size |Winsize|    Reserved	  |Publish conn id|
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   :								  :
++   :		 dst hw addr followed by src hw addr		  :
++   :								  :
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++   :                                                               :
++   :         feature negotiation string (null terminated)          :
++   :                                                               :
++   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++ */
++ 
++ #define CONN_HDR_OFFSET  HDR_MAIN_SIZE
++ 
++ #define CONN_RESET	 1
++ #define CONN_CONNECT	 2
++ #define CONN_CONNECT_ACK 3
++ #define CONN_ACK	 4
++ 
++ static inline uint32_t
++ get_conn_type(uint32_t h)
++ {
++ 	uint32_t type = ((h & 0x0f000000) >> 24);;
++ 
++ 	return (type & 0xf);
++ }
++ 
++ static inline uint32_t
++ connect_size(uint32_t h)
++ {
++ 	return h >> 21 & 0x7;
++ }
++ 
++ static inline uint32_t
++ window_size(uint32_t h)
++ {
++ 	return h >> 17 & 0xF;
++ }
++ 
++ static inline uint32_t
++ publish_conn_id(uint32_t h)
++ {
++ 	return h & 0xff;
++ }
++ 
++ static const inline uint8_t *
++ dst_hw_addr(const uint8_t *h)
++ {
++ 	return &h[8];
++ }
++ 
++ static const inline uint8_t *
++ src_hw_addr(const uint8_t *h, int s)
++ {
++ 	return &h[s + 8];
++ }
++ 
++ static inline uint8_t *
++ feat_neg_string(uint8_t *h, int s)
++ {
++ 	return &h[2*s + 8];
++ }
++ 
++ static inline int
++ conn_hdr_size(uint32_t h)
++ {
++ 	return 8 + (connect_size(h) * 2);
++ }
++ 
++ struct linx_internal_hdr {
++ 	uint32_t	h_src;
++ 	uint32_t	h_dst;
++ 	uint32_t	h_len;
++ uint32_t	h_pad;
++ };
++ 
++ struct linx_message {
++ 	uint32_t	signo;
++ };
++ 
++ static char *
++ connmsg2str(uint32_t type)
++ {
++ 	switch (type) {
++ 	case CONN_RESET:       return "RESET";
++ 	case CONN_CONNECT:     return "CONNECT";
++ 	case CONN_CONNECT_ACK: return "CONNECT_ACK";
++ 	case CONN_ACK:	       return "ACK";
++ 	default:	       return "Unknown";
++ 	}
++ }
++ 
++ static size_t
++ linx_ethcm_print(const u_char *p, int *moredata)
++ {
++ 	uint32_t mainhdr, connhdr, relhdr, udatahdr = 0, fraghdr, nackhdr;
++ 	uint32_t srcaddr, dstaddr;
++ 	size_t hdrsize = 0;
++ 	int prev_ack, prev_seq;
++ 
++ 	mainhdr = ntoh_unaligned(p, MAIN_HDR_OFFSET);
++ 	if (ver(mainhdr) > ETH_CM_PROTOCOL_VERSION) {
++ 		printf("LINX ETH CM proto error");
++ 		goto out;
++ 	}
++ 	printf("ver %d, cid %d, size %d",
++ 	       ver(mainhdr), connection_id(mainhdr), packet_size(mainhdr));
++ 	hdrsize += HDR_MAIN_SIZE;
++ 
++ 	switch (next(mainhdr)) {
++ 	case HDR_CONN:
++ 		connhdr = ntoh_unaligned(p, HDR_MAIN_SIZE);
++ 		printf(", msg %s, len %d, win %d, use cid %d, dst %s, src %s",
++ 		       connmsg2str(get_conn_type(connhdr)),
++ 		       connect_size(connhdr), 1 << window_size(connhdr),
++ 		       publish_conn_id(connhdr),
++ 		       etheraddr_string(dst_hw_addr(p)),
++ 		       etheraddr_string(src_hw_addr(p, 6)));
++ 		hdrsize += HDR_CONN_SIZE;
++ 		if (ver(mainhdr) >= ETH_CM_FEAT_NEG_PROTO_VER) {
++ 			if (get_conn_type(connhdr) == CONN_CONNECT_ACK ||
++ 			    get_conn_type(connhdr) == CONN_ACK) {
++ 				/* Account for feature negotiation */
++ 				char *features = (char *)(p + hdrsize);
++ 				hdrsize += strlen(features);
++ 				if (*features != '\0')
++ 					printf(", features %s", features);
++ 			}
++ 			hdrsize++; /* NULL terminated string */
++ 		}
++ 		if (next(connhdr) != HDR_NONE)
++ 			printf(", next Unknown %d", next(connhdr));
++ 		break;
++ 	case HDR_ACK:
++ 		relhdr = ntoh_unaligned(p, HDR_MAIN_SIZE);
++ 		printf(", %sack %d seq %d",
++ 		       get_request(relhdr) ? "REQ " : "",
++ 		       ackno(relhdr), seqno(relhdr));
++ 		hdrsize += HDR_ACK_SIZE;
++ 		switch (next(relhdr)) {
++ 		case HDR_UDATA:
++ 			udatahdr = ntoh_unaligned(p, UDATA_HDR_OFFSET);
++ 			if (fragno(udatahdr) != 0x7fff) {
++ 				printf(", %sfrag %d",
++ 				       more(udatahdr) ? "MORE, " : "",
++ 				       fragno(udatahdr));
++ 			}
++ 			if (ver(mainhdr) >= ETH_CM_32BIT_ADDRESS) {
++ 				dstaddr = ntoh_unaligned(p,
++ 							 UDATA_HDR_DST_OFFSET);
++ 				srcaddr = ntoh_unaligned(p,
++ 							 UDATA_HDR_SRC_OFFSET);
++ 			} else {
++ 				dstaddr = ntoh_unaligned(p,
++ 							 UDATA_HDR_ADDR_OFFSET);
++ 				srcaddr = src(dstaddr);
++ 				dstaddr = dst(dstaddr);
++ 			}
++ 			printf(", %d > %d", srcaddr, dstaddr);
++ 			hdrsize += HDR_UDATA_SIZE;
++ 			*moredata = 1;
++ 			if (next(udatahdr) != HDR_NONE)
++ 				printf(", next Unknown %d", next(udatahdr));
++ 			break;
++ 		case HDR_FRAG:
++ 			fraghdr = ntoh_unaligned(p, FRAG_HDR_OFFSET);
++ 			printf(", %sfrag %d",
++ 			       more(fraghdr) ?
++ 			       "MORE, " : "", fragno(fraghdr));
++ 			hdrsize += HDR_UDATA_FRAG_SIZE;
++ 			*moredata = 1;
++ 			if (next(fraghdr) != HDR_NONE) {
++ 				printf(", next Unknown %d", next(fraghdr));
++ 			}
++ 			break;
++ 		case HDR_NACK:
++ 			nackhdr = ntoh_unaligned(p, NACK_HDR_OFFSET);
++ 			hdrsize += HDR_NACK_SIZE;
++ 			printf(", nack %d %d",
++ 			       count(nackhdr), seqno_n(nackhdr));
++ 			break;
++ 		case HDR_NONE:
++ 			break;
++ 		default:
++ 			printf("next Unknown %d", next(relhdr));
++ 		}
++ 		break;
++ 	case HDR_NONE:
++ 		break;
++ 	default:
++ 		printf("(next Unknown %04x)", next(mainhdr));
++ 		break;
++ 	}
++ 	printf(": ");
++  out:
++ 	return hdrsize;
++ }
++ 
++ /* NOTE: This don't work if the processes involved dies before we get
++  *       a chance to convert the spids to names. */
++ static int
++ linx_ioctl_name_len(uint32_t spid,
++ 		    int sock)
++ {
++         struct linx_info info;
++         struct linx_info_name info_name;
++ 	int len;
++ 
++         info_name.name = NULL;
++         info_name.namelen = 0;
++         info_name.spid = spid;
++         info.type = LINX_INFO_NAME;
++         info.type_spec = &info_name;
++ 	
++         if ((len = ioctl(sock, LINX_IOCTL_INFO, &info)) == -1) {
++                 return -1;
++         }
++ 	
++ 	return len;
++ }
++ 
++ static int
++ linx_ioctl_name(uint32_t spid,
++ 		int sock,
++ 		char *name,
++ 		size_t len)
++ {
++         struct linx_info info;
++         struct linx_info_name info_name;
++ 
++         info_name.name = name;
++         info_name.namelen = len;
++         info_name.spid = spid;
++         info.type = LINX_INFO_NAME;
++         info.type_spec = &info_name;
++ 
++         if (ioctl(sock, LINX_IOCTL_INFO, &info) == -1) {
++                 /* errno from ioctl() */
++                 return -1;
++         }
++ 
++ 	return 0;
++ }
++ 
++ static int
++ linx_get_name(uint32_t spid,
++ 	      int sock,
++ 	      char **name)
++ {
++ 	int len;
++ 
++ 	if ((len = linx_ioctl_name_len(spid, sock)) == -1)
++ 		return -1;
++ 	if ((*name = malloc((size_t)len)) == NULL)
++ 		return -1;
++ 	if (linx_ioctl_name(spid, sock, *name, (size_t)len) == -1) {
++ 		free(*name);
++ 		*name = NULL;
++ 		return -1;
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ static void
++ linx_free_name(char *name)
++ {
++ 	if (name != NULL)
++ 		free(name);
++ }
++ 
++ static void
++ linx_addr_print(uint32_t sspid, uint32_t dspid)
++ {
++ 	char *sname = NULL;
++ 	char *dname = NULL;
++ 	int sock;
++ 
++ 	sock = socket(AF_LINX, SOCK_DGRAM, 0);
++ 	if (sock != -1) {
++ 		if (linx_get_name(sspid, sock, &sname) < 0)
++ 			printf("%#x > %#x: ", sspid, dspid);
++ 		else if (linx_get_name(dspid, sock, &dname) < 0)
++ 			printf("%#x > %#x: ", sspid, dspid);
++ 		else
++ 			printf("%s > %s: ", sname, dname);		
++ 	} else 
++ 		printf("%#x > %#x: ", sspid, dspid);
++ 
++ 	if (sname)
++ 		linx_free_name(sname);
++ 	if (dname)
++ 		linx_free_name(dname);
++ 	if (sock != -1)
++ 		close(sock);
++ }
++ 
++ static void
++ linx_len_print(uint32_t len)
++ {
++ 	printf("(len %d) ", len);
++ }
++ 
++ static void
++ linx_signo_print(uint32_t signo)
++ {
++ 	if (bflag == 8)
++    	printf("signo %o", signo);
++    else if (bflag == 10)
++    	printf("signo %d", signo);
++    else if (bflag == 16)
++    	printf("signo %x", signo);
++ }
++ 
++ void
++ linx_external_print(const u_char *p, u_int length, u_int caplen)
++ {
++ 	register const struct linx_internal_hdr *lihp;
++ 	register const struct linx_message *lmp;
++ 	uint32_t sspid, dspid;
++ 	uint32_t signo;
++ 	size_t hdrsize = 0;
++ 	size_t minsize = sizeof(struct linx_message);
++ 	int more = 0;
++ 
++ 	if (!eflag)
++ 		printf("LINX ");
++ 
++ 	if (vflag > 1) {
++ 		hdrsize = linx_ethcm_print(p, &more);
++ 	}
++ 
++ 	if (length < hdrsize) {
++ 		printf("truncated-linx hdrsize %d", length);
++ 		return;
++ 	}
++ 
++         if (!more)
++                 return;
++ 
++ 	if (length - hdrsize < minsize) {
++ 		printf("truncated-linx minsize %d", length);
++ 		return;
++ 	}
++ 
++ 	signo = *(uint32_t *)(p + hdrsize);
++ 	/* External signos are network byte order. */
++ 	linx_signo_print(ntohl(signo));
++ 	return;
++ }
++ 
++ u_int
++ linx_internal_print(const struct pcap_pkthdr *h, const u_char *p)
++ {
++ 	register const struct linx_internal_hdr *lihp;
++ 	register const struct linx_message *lmp;
++ 	uint32_t sspid, dspid;
++ 	size_t hdrsize = sizeof(struct linx_internal_hdr);
++ 	size_t minsize = hdrsize + sizeof(struct linx_message);
++ 	size_t len;
++ 
++ 	printf("LINX ");
++ 
++ 	if (h->len < hdrsize) {
++ 		printf("truncated-linx %d", h->len);
++ 		return hdrsize;
++ 	}
++ 
++ 	lihp = (struct linx_internal_hdr *)p;
++ 	sspid = lihp->h_src;
++ 	dspid = lihp->h_dst;
++ 	linx_addr_print(sspid, dspid);
++ 
++ 	if (h->len < minsize) {
++ 		printf("truncated-linx %d", h->len);
++ 		return hdrsize;
++ 	}
++ 
++ 	if (vflag > 0) {
++ 		len = lihp->h_len;
++ 		linx_len_print(len);
++ 	}
++ 
++ 	lmp = (struct linx_message *)(p + sizeof(struct linx_internal_hdr));
++ 	/* Internal signos are always host byte order. */
++ 	linx_signo_print(lmp->signo);
++ 
++ 	return hdrsize;
++ }
++ 
++ 
++ /*
++  * Local Variables:
++  * c-style: whitesmith
++  * c-basic-offset: 8
++  * End:
++  */
+diff -crBN old/tcpdump-4.0.0/tcpdump.c new/tcpdump-4.0.0/tcpdump.c
+*** old/tcpdump-4.0.0/tcpdump.c	2008-10-11 04:39:58.000000000 +0200
+--- new/tcpdump-4.0.0/tcpdump.c	2009-03-19 17:54:55.296000000 +0100
+***************
+*** 276,281 ****
+--- 276,284 ----
+  #if defined(DLT_BLUETOOTH_HCI_H4_WITH_PHDR) && defined(HAVE_PCAP_BLUETOOTH_H)
+  	{ bt_if_print, DLT_BLUETOOTH_HCI_H4_WITH_PHDR},
+  #endif
++ #ifdef DLT_LINX_INTERNAL
++ 	{ linx_internal_print, DLT_LINX_INTERNAL },
++ #endif
+  	{ NULL,			0 },
+  };
+  
+***************
+*** 515,521 ****
+  	gndo->ndo_error=ndo_error;
+  	gndo->ndo_warning=ndo_warning;
+  	gndo->ndo_snaplen = DEFAULT_SNAPLEN;
+!   
+  	cnt = -1;
+  	device = NULL;
+  	infile = NULL;
+--- 518,525 ----
+  	gndo->ndo_error=ndo_error;
+  	gndo->ndo_warning=ndo_warning;
+  	gndo->ndo_snaplen = DEFAULT_SNAPLEN;
+! 
+! 	bflag = 10;
+  	cnt = -1;
+  	device = NULL;
+  	infile = NULL;
+***************
+*** 535,541 ****
+  
+  	opterr = 0;
+  	while (
+! 	    (op = getopt(argc, argv, "aA" B_FLAG "c:C:d" D_FLAG "eE:fF:G:i:" I_FLAG "KlLm:M:nNOpqr:Rs:StT:u" U_FLAG "vw:W:xXy:Yz:Z:")) != -1)
+  		switch (op) {
+  
+  		case 'a':
+--- 539,545 ----
+  
+  	opterr = 0;
+  	while (
+! 	    (op = getopt(argc, argv, "aA" "b:" B_FLAG "c:C:d" D_FLAG "eE:fF:G:i:" I_FLAG "KlLm:M:nNOpqr:Rs:StT:u" U_FLAG "vw:W:xXy:Yz:Z:")) != -1)
+  		switch (op) {
+  
+  		case 'a':
+***************
+*** 545,551 ****
+  		case 'A':
+  			++Aflag;
+  			break;
+! 
+  #if defined(HAVE_PCAP_CREATE) || defined(WIN32)
+  		case 'B':
+  			Bflag = atoi(optarg)*1024;
+--- 549,561 ----
+  		case 'A':
+  			++Aflag;
+  			break;
+! 			
+! 		case 'b':
+! 			bflag = atoi(optarg);
+! 			if (bflag != 8 && bflag != 10 && bflag != 16)
+! 				error("invalid radix %s", optarg);
+! 			break;
+! 			
+  #if defined(HAVE_PCAP_CREATE) || defined(WIN32)
+  		case 'B':
+  			Bflag = atoi(optarg)*1024;

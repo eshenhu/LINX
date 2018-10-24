@@ -1,0 +1,116 @@
+LINX "basic" client/server example application
+==============================================
+
+This is a client/server example application using the LINX IPC.
+
+The client(s) and the server may be executed on the same machine or
+on different machines interconnected by LINX. 
+
+The client looks up (hunt for) the server, either on a given link or on the
+local machine if no <linkname> is provided as argument. When the server
+has been found,
+a message with signal number REQUEST_SIG is sent. The server answers each incoming
+request with a REPLY_SIG to the client.
+Upon receiving the reply, the client waits for 2 seconds and then sends the next
+request. Each request/reply carries a sequence number to identify
+the transaction. The total number of requests to be sent can be
+given as an argument when starting the client (the -n option).
+
+The server may be terminated and restarted at any time. The clients
+use the LINX attach function to detect if the server disappears and
+will resume operation as soon as the server is available again.
+
+The client(s) and the server can be started in any order, and many
+clients may be run simultaneously (local or remote). 
+
+Both the client(s) and the server will close down after 30 seconds
+of inactivity.
+
+
+
+How to build
+------------
+
+Build the LINX API library:
+
+   cd <top level LINX directory>
+   make lib
+
+Build the example:
+
+   cd <top level LINX directory>
+   make example
+
+The build results in two executables:
+
+   example/bin/linx_basic_client
+   example/bin/linx_basic_server
+
+See the README in the LINX top level directory for information on
+how to build the LINX kernel module and the linxcfg command util.
+
+
+
+How to run the example on a single node
+---------------------------------------
+
+If the target machine is not the same as the build host, download
+the LINX kernel module and the linx_example application to the target
+and login as root. Modify the paths below as appropriate.
+
+Install the LINX kernel module:
+
+   insmod net/linx/linx.ko
+
+Start the server (in the background):
+
+   example/bin/linx_example_server &
+
+Start the client (send 10 requests, then terminate):
+
+   example/bin/linx_example_client -n 10
+
+
+
+How to run the example on two nodes
+-----------------------------------
+
+If the target machines are not the same as the build hosts, download
+the LINX kernel module, the linxcfg command and the linx_example
+application to the targets and login as root. Modify the paths below
+as appropriate.
+
+On each targets, install the LINX kernel and ethernet cm module:
+
+   insmod net/linx/linx.ko
+   insmod net/linx/linx_eth_cm.ko
+
+On each target, establish a link using the linxcfg command:
+
+   bin/linxcfg create <remote mac addr> <device(i.e. eth0)> <linkname>
+
+On target 1, start the server:
+
+   example/bin/linx_basic_server
+
+On target 2, start the client (send 10 requests, then terminate):
+
+   example/bin/linx_basic_client -n 10 <linkname>
+
+
+Example:
+
+   Target 1:
+
+   root@target1> insmod net/linx/linx.ko
+   root@target1> insmod net/linx/linx_eth_cm.ko
+   root@target1> bin/linxcfg create 00:E0:0C:00:00:FD eth0 target2
+   root@target1> example/bin/linx_basic_server
+
+   Target 2:
+
+   root@target2> insmod net/linx/linx.ko
+   root@target2> insmod net/linx/linx_eth_cm.ko
+   root@target2> bin/linxcfg create 00:30:07:04:02:5E eth0 target1
+   root@target2> example/bin/linx_basic_client -n 10 target1
+

@@ -1,0 +1,436 @@
+SHMCM                                                                      SHMCM
+
+                 LINX Shared Memory Connection Manager (SHMCM)
+
+Introduction
+============
+
+Note: First, this CM requires that a so-called mailbox driver is implemented.
+      The mailbox interface is described in mailbox.h, which can be found in
+      <LINX_ROOT>/include/linux. No mailbox driver is included in the LINX
+      release.
+
+The SHMCM comprises 7 files, which are listed below together with a short
+description.
+
+* shmcm.c,        this file implements the bulk of connection manager.
+
+* shmcm_tx.c,     this file implements packet transmission.
+
+* shmcm_rx.c,     this file implements packet reception.
+
+* shmcm_proto.h,  this file contains SHMCM protocol specific defines, types and
+                  functions.
+
+* shmcm_mbox.h,   this file contains macros, types, etc. that defines
+                  the shared memory layout involved in packet Rx/Tx.
+
+* shmcm_kutils.c/h, these files contains macros, types and functions that are
+                    missing in older Linux kernels. Always include these files
+                    in the build (kernel version macros select what is needed).
+
+All the above mentioned files are compiled and linked into a Linux kernel
+module, linx_shm_cm.ko. No symbols are exported from this module. However, it
+depends on symbols that are exported from the LINX kernel module and
+the mailbox.h implementation.
+
+The SHMCM implements the down-calls and uses the up-calls that are defined in
+rlnh_link.h.
+
+The SHMCM implementation is split into three separate parts, i.e. packet
+reception, packet transmission and connection management. Each part is
+separately described below.
+
+                         shmcm_dc_<x>()  uc_connected(),
+                                  |      uc_disconnected()
+ shmcm_dc_transmit()              |        ^                        uc_deliver()
+     |                            v        |                               ^
+     |                           +----------+                              |
+     |  +- shmcm_send_con_pkt() -| Con Mgmt |<- shmcm_deliver_con_pkt() -+ |
+     |  |                        +----------+                            | |
+     v  v                                                                | |
+   +------+                                                            +------+
+   |  Tx  |                                                            |  Rx  |
+   +------+                                                            +------+
+      |                                                                  ^
+      v                                                                  |
++-----------------------------------------------------------------------------+
+|                                  mailbox.h                                  |
++-----------------------------------------------------------------------------+
+
+                              Fig.1 SHMCM overview.
+
+
+Connection Managment
+====================
+
+
+The connection state machine:
+-----------------------------
+
+The SHMCM implements a simple state machine to make sure that the RLNH/CM API
+(see rlnh_link.h) is fulfilled.
+
+   STATE_DISCONNECTED <--> STATE_CONNECTING ---> STATE_CONNECTED
+            ^                                           |
+            |                                           |
+            +-------------------------------------------+
+
+                       Fig.2 The SHMCM state machine.
+
+* STATE_DISCONNECTED, disconnected upcall has been called. It is also
+                      a connection's initial state.
+
+* STATE_CONNECTING,   got a connect downcall. Start connecting to peer.
+
+* STATE_CONNECTED,    connected upcall has been called.
+
+First, some words about the protocol that the SHMCM uses to establish and
+supervise a connection. The protocol uses four different packet types:
+
+* CON_REQ, sent to the peer to start connection setup.
+
+* CON_ACK, reply to a CON_REQ. When a CON_ACK is received, the connection
+           setup is finished, i.e. we have a connection.
+
+* CON_RST, sent to peer to abort connection setup or gracefully tear down
+           the connection.
+
+* CON_ALV, when the connection is established, this packet is sent periodically
+           to indicate that "I'm alive".
+
+Since the media is "reliable", i.e. packets won't be lost and are always
+received in the same order that they are sent by the peer, re-transmission,
+etc. are not necessary. However, when we send the CON_REQ, we can't be sure
+that the peer is ready to receive it and for that reason we need to wait for
+a CON_ACK.
+
+Now, back to the state-machine... When a connection is created (using mkshmcon),
+the state is set to DISCONNECTED. It stays in this state until a connect
+(down-call) is received.
+
+When the CM receives the connect down-call, it sends a CON_REQ to the peer
+and changes its state to CONNECTING. The CM remains in this state until it
+receives a CON_REQ or a CON_ACK from the peer. If it receives a CON_REQ,
+it replies with a CON_ACK, calls connected (up-call) and changes the state
+to CONNECTED. If it receives a CON_ACK, it calls connected and changes
+the state to CONNECTED.
+
+If the CM receives a CON_ACK in the CONNECTED state, it is ignored. However,
+if it receives a CON_RST or a CON_REQ, it calls disconnected and changes
+the state to DISCONNECTED. If a CON_REQ was received, the CM sends a CON_RST
+before calling disconnected. While the CM is in CONNECTED state, it
+periodically sends a CON_ALV to tell the peer that "I'm alive". If the CM
+hasn't received any packets, CON_ALV or user-data, from the peer for a defined
+period of time, it should consider the peer dead and disconnect the connection,
+i.e. send a CON_RST and call disconnected. If a CON_ALV is received in another
+state than CONNECTED, it should be ignored.
+
+When the CM gets a disconnect (down-call) from RLNH, it should always call
+disconnected (up-call) and changes its state to DISCONNECTED (note that RLNH
+must not call disconnect twice without an intervening connect). If the CM isn't
+in DISCONNECTED state, it should send a CON_RST before calling disconnected.
+
+If the CM encounters an internal error, etc. it may need to disconnect
+the connection. If the CM is in CONNECTING state, <FIXME: we need to re-send
+a CON_REQ or a CON_ACK here>.
+If it is in CONNECTED state, it should send a CON_RST, call disconnected and
+change its state to DISCONNECTED.
+
+
+The SHMCM protocol, in detail:
+------------------------------
+
+Every packet starts with a "main header", which has the following layout:
+
+struct shmcm_mhdr {
+        uint32_t type;
+        uint32_t size;
+};
+
+The SHMCM uses two different "main packet types", CON_PKT and UDATA_1_PKT.
+CON_PKT is used for connection management and UDATA_1_PKT is used to
+transfer user data (e.g. RLNH messages, LINX signals).
+
+Every CON_PKT is made up of a "connection header", which has the following
+layout:
+
+struct shmcm_chdr {
+        uint32_t type;
+	uint16_t cno;
+        uint16_t spare;
+};
+
+The type field can be CON_REQ, CON_ACK, CON_RST or CON_ALV, see description
+above.
+
+The cno or connection generation number is used to discard "old packets",
+e.g. after a re-connect. It's a simple counter, that is incremented before
+a CON_REQ is sent (i.e. on connect down-call). The counter value is included
+in all packets, both CON_PKT and USER_1_PKT, that is sent (the peer saves
+the counter received in CON_REQ or CON_ACK).
+
+In a user data packet, the "user-data" is stored immediately after the user
+data header.
+
+struct shmcm_uhdr {
+        uint16_t cno;
+        uint16_t msgid;
+
+        uint32_t src;
+        uint32_t dst;
+        uint32_t size;
+        uint64_t addr;
+};
+
+The cno is the same as for CON_PKT. The msgid is used to keep fragmented user
+data together. The src, dst and size fields are data from the transmit down-
+call. The addr is not used in this implementation and should be set to zero.
+
+
+The workqueue and SHMCM jobs:
+-----------------------------
+
+The connection management implementation is based on a single threaded
+workqueue. The shmcm_workq_func acts as the workqueue's entry point and
+dispatches the different jobs. The following functions submit jobs to
+the workqueue.
+
+* shmcm_create/destroy,  called by DB, LINX configuration management, to create
+                         or destroy a connection.
+
+* shmcm_dc_<x>,          down-calls except transmit, see rlnh_link.h.
+
+* shmcm_deliver_con_pkt, called by Rx to feed a CON packet into the state
+                         machine.
+
+* shmcm_disconnect,      called by Rx/Tx code to request a disconnect.
+
+* conn_tmo_func,         called when the connection timer expires.
+
+All jobs are of type struct shmcm_work, which also has a job specific part.
+Jobs are normally allocated with alloc_shmcm_work, which uses kmalloc.
+
+shmcm_create/destroy		 GFP_KERNEL
+shmcm_dc_init/connect/finalize	 GFP_KERNEL
+shmcm_dc_disconnect		 GFP_ATOMIC
+shmcm_deliver_con_pkt		 GFP_ATOMIC (note 1)
+shmcm_disconnect		 GFP_ATOMIC
+conn_tmo_func			 GFP_ATOMIC (note 2)
+
+Note 1: CON packets are sent reliable, so if "kmalloc" fails we MUST disconnect.
+Note 2: If kmalloc fails, we miss a "tick", which will have little (or no)
+        impact on the connection behavior.
+
+Some of these functions require that the work has been carried out by the work
+queue, before they can return, e.g. shmcm_create. This is accomplished with
+a waitqueue, illustrated with the following code snippet:
+
+static int func(void)
+{
+        ...
+        w->status = 1;
+        queue_work(shmcm_workq, &w->work);
+        wait_event(shmcm_waitq, &w->status != 1); /* Wait here! */
+        ...
+}
+
+static void shmcm_workq_func(struct work_struct *p)
+{
+        w = container_of(p, struct shmcm_work, work);
+        ...
+        w->status = 0;            /* Done! Set wake-up condition. */
+        wake_up_sync(&shmcm_waitq); /* Wake-up! */
+        ...
+}
+
+
+Rx Data Path
+============
+
+
+Deliver Data to RLNH or the Workqueue:
+--------------------------------------
+
+The Rx data path's entry point is rx(). Before this function is called, data
+from the driver has been copied into a skb. The different pointers in the skb
+is initialized according to the figure below.
+
+skb->head --------------> +-------------+
+                          | struct mhdr |
+skb->data --------------> +-------------+
+                          | struct chdr |
+                          |     or      |
+                          | struct uhdr |
+                          +-------------+
+                          |             |
+                          |    udata    |
+                          |             |
+skb->tail / skb->end ---> +-------------+
+
+Now, the depnding on packet type, the skb can take one of two paths. If it's
+a CON packet, the skb is delivered to the connection management workqueue for
+futher processing. If it's a UDATA packet, a couple of more check is done
+before it's delivered to RLNH with uc_deliver.
+
+First, if the packet has a connection number (i.e. generation number) that
+doesn't match the current connection, the skb is freed ("old packet").
+Second, if the packet needs to be re-assembled with other packets, it's put
+into re-assembly queue until all fragments have been received and it can be
+delivered to RLNH. Non-fragmented messages are delivered directly to RLNH.
+
+Before the skb is delivered to RLNH with uc_deliver, the skb->data is moved
+to point to the start of udata.
+
+The re-assembly queues are a simple hash-table, the msgid (see protocol
+chapter) is used as hash-key. Collisions are resolved by using a linked
+list. The first fragment's skb is stored in the hash-table, when the next
+fragment arrives (i.e. matching msgid), this skb is linked into the first
+skb's frag_list. The next fragment is added to the tail of the frag_list
+and so on until all fragments have been received.
+
+Note: rx() is the callback function that is registered in the mailbox
+      driver. This driver must make sure that rx() doesn't run in
+      parallel with itself, e.g. the driver can run rx() in a tasklet.
+
+Synchronization with the Workqueue:
+-----------------------------------
+
+In some connection states, it's not allowed to deliver packets, instead
+they should be enqueued/dropped. Since packet are received asynchronous,
+connection management and packet delivery must be synchronized at certain
+points. So-called shmcm-locks are used for synchronization, see separate
+chapter below.
+
+There are two shmcm-locks:
+
+      * deliver-lock, to prevent that packets are delivered after
+        a disconnected up-call (uc_disconnected).
+
+      * CON-packet-lock, to prevent that CON-packets are submitted
+        to the workqueue after that the connection has been destroyed.
+
+Reference counting is used for the connection objects. The use count is
+initialized to 1 and the object is freed when the use count is 0. There are
+get/put functions that must be used to get access to the connection
+object. These functions only applies to the Rx path, Tx path always gets
+the connection object as a parameter, so it's up to the caller to make sure
+that the connection object isn't freed.
+
+
+Tx Data Path
+============
+
+
+There are two transmit functions, shmcm_dc_transmit and shmcm_send_con_pkt.
+First, shmcm_send_con_pkt is used to send CM protocol messages to the peer
+and it's only called from the workqueue. Then there is the shmcm_transmit_dc
+that is used to transmit user data. It is only called from non-atomic context.
+
+Synchronization with the Workqueue:
+-----------------------------------
+
+The Tx data path makes use of one shmcm-lock, transmit-lock, to prevent that
+user data is sent out after a CON_RST has been sent. The Tx data path also
+uses an variable to prevent the same process/thread to send user-data while
+the disconnect job sits in the workqueue, waiting to be carried out.
+
+The deferred queue:
+-------------------
+
+A deferred queue is implemented to queue out going packets, if there is no
+shared memory available. The queue size is limited and defaults to zero.
+Once the queue limit has been reached, the connection is disconnected.
+This queue may prevent unnecessary disconnect due to short user-data
+bursts.
+
+
+Some words about synchronization and the so-called shmcm locks
+==============================================================
+
+
+Sometimes Rx/Tx code must be synchronized with the workqueue, e.g. during
+a disconnect. Rx/Tx code (or parts of it) runs "in atomic" context and is
+frequently called. For that reason, the lock should be fast to acquire and
+release. However, a workqueue may sleep, so that side of the lock doesn't need
+to be light weighted. The struct ecm_lock is a synchronization mechanism based
+on an atomic variable and a waitqueue. It works like this:
+
+static void rx(void)
+{
+        ...
+        if (shmcm_trylock(&p->rx_lock) == 0)
+                return; /* Didn't get the lock! */
+
+        /* Critical region */
+
+        shmcm_unlock(&p->rx_lock);
+}
+
+static void shmcm_workq_func(struct work_struct *p)
+{
+        ...
+        synchronize_shmcm_lock(&p->rx_lock);
+
+        /*
+         * When synchronize_shmcm_lock returns, two things are guaranteed:
+         *
+         * 1. No one can acquire rx_lock, i.e. no one can enter the critical
+         *    region.
+         * 2. No one is left inside the critical region.
+         *
+         * Note: synchronize_shmcm_lock may sleep!
+         */
+        ...
+}
+
+Let us have a closer look at how this works. First we have the shmcm_lock data
+type,
+
+struct shmcm_lock {
+        atomic_t count;
+        wait_queue_head_t waitq;
+};
+
+and then three functions. Note that count must be initialized to 1 to allow
+anyone to get the lock!
+
+static inline int shmcm_trylock(struct shmcm_lock *lock)
+{
+        return atomic_positive_inc(&lock->count);
+}
+
+If count is greater than 0, shmcm_trylock will increment count and return
+success, i.e. got the lock. Note that count-1 is the number of users currently
+holding the lock (since count is initialized to 1).
+
+static inline void shmcm_unlock(struct shmcm_lock *lock)
+{
+        if (atomic_add_negative(-1, &lock->count))
+                wake_up_sync(&lock->waitq);
+}
+
+As long as count is greater than 1, shmcm_unlock just decrements count. However
+if count is less than or equal to 0, then wake_up_sync is also called (for
+every shmcm_unlock).
+
+static inline void synchronize_shmcm_lock(struct shmcm_lock *lock)
+{
+        int k = atomic_xchg(&lock->count, 0) - 1;
+        if (k <= 0)
+                return;
+        wait_event(lock->waitq, atomic_read(&lock->count) == -k);
+}
+
+First, count is replaced with 0 and k is assigned the number of users currently
+holding the lock. Since count now is less than or equal to 0, shmcm_trylock will
+fail. If k is 0, no one is holding the lock and it is safe to return. But if k
+is greater than 0, then we have to wait until all lock holders have called
+shmcm_unlock, before we can return. That is why we use a waitqueue and sleeps
+until count is -k (shmcm_unlock adds -1 to count).
+
+For example, let us say that count is 3, i.e. there are 2 lock holders. Now
+synchronize_shmcm_lock is called and when we reach wait_event, count is 0 and
+k is 2, i.e. we sleep until count is -2. When the lock holders are done and
+call shmcm_unlock, count is first -1 and then -2, since count is negative
+wake_up_sync is called.

@@ -1,0 +1,189 @@
+.TH LINX_REQUEST_TMO 3 "2008-04-24" 1.4 "LIBLINX"
+.SH NAME
+linx_request_tmo() - request timeout with specified signal
+.br
+linx_cancel_tmo() - cancel the specified timeout.
+.br
+linx_modify_tmo() - modify the specified timeout
+.br
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "LINX_OSTMOREF linx_request_tmo(LINX *" linx ", LINX_OSTIME " tmo ", union LINX_SIGNAL **" sig ");"
+.br
+
+.BI "int linx_cancel_tmo(LINX *" linx ", LINX_OSTMOREF *" tmoref ");"
+
+.BI "int linx_modify_tmo(LINX *" linx ", LINX_OSTMOREF *" tmoref ", LINX_OSTIME " tmo ");"
+
+.SH DESCRIPTION
+
+.BR linx_request_tmo "()"
+is used to request a signal,
+.IR sig ","
+to be sent to the requesting LINX endpoint
+.IR linx
+when a timeout has expired. Information necessary for cancelling the
+time-out is returned.  The actual time-out time,
+.IR tmo ","
+is rounded upward to the next larger tick because a time-out can
+only trigger when a system clock tick is received. Hence, the routine
+guarantees at least the number of milliseconds requested, but may add
+a few more depending on the tick resolution. When several time-out
+signals are generated at the same clock tick, the order is unspecified.
+If
+.I sig
+is NULL, the default LINX timeout signal with signal number LINX_OS_TMO_SIG
+is received instead.
+The linx_request_tmo () call consumes the signal, and sets the
+.I sig
+pointer to LINX_NIL. The signal is also consumed if an error occurs.
+
+.BR linx_cancel_tmo "()"
+is used to cancel a timeout. The time-out is identified by the
+.IR tmoref
+parameter, which was set by
+.BR linx_request_tmo "()".
+It's an error to cancel a timeout more than once or to cancel a
+timeout after the timeout signal has been received.  It is not an
+error to cancel the timeout if the timeout signal is waiting in the
+receive queue of the LINX endpoint. To prevent multiple cancellations,
+.BR linx_cancel_tmo "()"
+sets the tmoref pointer to LINX_ILLEGAL_TMOREF.
+.br
+
+.BR linx_modify_tmo "()"
+is used to modify a timeout. The time-out is identified by the tmoref
+parameter, which was set by
+.BR linx_request_tmo "()".
+It's an error to modify a timeout after the timeout signal has been
+received.  It is not an error to modify the timeout if the timeout
+signal is waiting in the receive queue of the LINX endpoint.
+
+.I linx
+is the handle of the LINX endpoint.
+.br
+
+.I spid
+is the timeout time in milliseconds.
+.br
+
+.I sig
+is either NULL or a user defined LINX signal.
+.br
+
+.I tmoref
+is the reference to the timeout obtained from
+.BR linx_request_tmo "()."
+
+.SH "RETURN VALUE"
+.BR linx_request_tmo "()"
+returns an timeout reference (LINX_OSTMOREF) when successful.
+This timeout reference can be used
+to cancel the timeout.
+.BR linx_cancel_tmo "()"
+returns 0 on success.
+.br
+
+On failure,
+.BR linx_request_tmo "()"
+returns LINX_ILLEGAL_TMOREF while
+.BR linx_cancel_tmo "()"
+and
+.BR linx_modify_tmo "()"
+both returns -1.
+In all cases
+.I errno
+will be set appropriately.
+.SH ERRORS
+.BR EBADF ", " ENOTSOCK
+The
+.IR linx
+handle refers to an invalid socket descriptor.
+.br
+
+.BR ENOMEM
+Not enough memory.
+.br
+
+.BR EINVAL
+Invalid argument.
+.br
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH "EXAMPLE"
+This example shows how to request and wait for a timeout.
+
+.nf
+
+#include <linx.h>
+
+int
+main (int argc, char *argv[]) 
+{
+  LINX *linx;
+  union LINX_SIGNAL *sig;
+  const LINX_SIGSELECT sel_tmo_sig [] = { 1, LINX_OS_TMO_SIG };
+
+  /* Create a LINX endpoint */
+  linx = linx_open("tmo-test", NULL, 0);
+
+  /* Request a one second timeout. When the timeout expires the
+     default signal will be returned. */
+  linx_request_tmo(linx, 1000, NULL);
+
+  /* Wait for the timeout signal. */
+  linx_receive(linx, &sig, sel_tmo_sig);
+
+  /* Free the timeout signal */
+  linx_free_buf(linx, &sig);
+
+  /* Close the LINX endpoint */
+  linx_close(linx);
+
+  return 0;
+}
+
+.fi
+.SH "SEE ALSO"
+.BR linx "(7), "
+.BR linx_close "(3), "
+.BR linx_open "(3)  "
+.BR linx_receive "(3), "
+.SH "AUTHOR"
+Enea LINX team
+.SH "COPYRIGHT"
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

@@ -1,0 +1,410 @@
+#!/bin/sh
+VER=R0.20/lejo
+#
+# Creates HTML from MAN pages
+# Creates PDF from HTML for MAN pages, usersguide + linxgwug (and old linxprotocols.html if exists)
+# Created HTML and PDF from book-linx-protocols
+# Do always run this before make_distribution!
+#
+#-----------------------------
+#R0.20/lejo 2009-04-14 Move PDF of UG and GWUG up to linx/doc to allow pdf-links to work
+#R0.19/lejo 2009-04-15 Patch some of the ERRONEOUS html (tags are upper case!) created by rman on lizard
+#                      (PolyglotMan v3.0.8+XFree86). Other servers has PolyglotMan v3.0.8+X.Org and
+#                      I cannot find any rman option to force correct lower case tags?
+#                      Patch just to make the script's sed commands work anyhow
+#R0.18/lejo 2009-04-15 Add -gw for linxgw_ug. No error msg if linxprotocols.html does not exist.
+#                      Allow start also from linx/doc. Adjust help text.
+#R0.17/lejo 2009-03-18 Added book-linx-protocols DocBook XML built with make_book_linx
+#R0.16/lejo Avoid error message if rman is not in path but in /usr/X11R6/bin/rman
+#R0.15/lejo Add HTMLDOC_DATA env.var. to be able to delete old path without
+#           recompiling htmldoc. Otherwise got font error because htmldoc
+#           uses compiled-in path to fonts, htmldoc seems to have a bug which
+#           ignore the --datadir option at least for fonts. This points to
+#           the common place where both data and fonts recides.
+#R0.14 Allow htmldoc be either in /usr/local/htmldoc/ or /rdtools/htmldoc
+#-----------------------------
+
+# htmldoc either in /rdtools/htmldoc/ or /usr/local/htmldoc/
+BINHTMLDOCDIR=/rdtools/htmldoc
+HOST="`uname -s`"
+if [ "$HOST" = "SunOS" ]; then BINHTMLDOCDIR=/rdtools/htmldoc-solaris ; fi
+
+# HTMLDOC manuals are seen in $BINHTMLDOCDIR/ share and man
+#
+if ! type $BINHTMLDOCDIR/bin/htmldoc >/dev/null 2>&1 ; then
+        if [ -f "/usr/local/htmldoc/bin/htmldoc" ]; then
+           BINHTMLDOCDIR=/usr/local/htmldoc
+        fi
+        if ! type $BINHTMLDOCDIR/bin/htmldoc >/dev/null 2>&1 ; then
+	  ERROR_NO_HTMLDOC=true
+	  echo "*** ERROR: No htmldoc available to create PDF in $BINHTMLDOCDIR"
+	fi
+fi
+
+# Need HTMLDOC_DATA because htmldoc seems to ignore the --datadir options and use compiled-in.
+HTMLDOC_DATA=$BINHTMLDOCDIR/share/htmldoc ; export HTMLDOC_DATA
+
+if ! type rman >/dev/null 2>&1 ; then
+   export PATH=$PATH:/usr/X11R6/bin
+   if ! type rman >/dev/null 2>&1 ; then
+	ERROR_NO_RMAN=true
+	echo "*** ERROR: No rman command available (in PATH)"
+   fi
+fi
+if pwd | egrep 'linx/doc$' >/dev/null 2>&1 ; then cd .. ; fi # Allow start from doc/
+if pwd | egrep 'scripts$' >/dev/null 2>&1 ; then cd .. ; fi # Allow start from scripts/
+
+HELP=
+if [ ! -e ./MANIFEST ]; then  HELP=yes ; fi
+
+USAGE="usage: make_linx_doc [-u|-gw|-p|-m|-mh|-bookp] ($VER)
+       Must be run from the  linux/linx root (or in scripts/)
+       For MAN pages, it will also create HTML first.
+       Creates PDF from HTML using HTMLDOC: 
+            Usersguide(u), linxGWug(gw), MAN pages(m) ,linxprotocols (p).
+       From DocBook XML create both PDF and HTML using make_book_linx script (bookp).
+       No complains if no linxprotocols.html exists, assuming DocBook version is used.
+  -u|-gw|-p|-m|bookp Create only for one of the above (default creates all).
+  -mh  Only create HTML from MAN pages -nothing more (done also by -m as first step).
+       MAN-pages-to-HTML requires rman from http://PolyglotMan.sourceforge.net/
+       To create PDFs, requires htmldoc from http://www.htmldoc.org
+       Solaris-version of htmldoc is used if uname -s shows SunOS
+       To create from DocBook XML, CC-config-spec is temporary patched/restored
+       and OSE5's omnimake is used.
+  -keep   for debug, keeping tmp files
+  -nohtml for debug, assume that html/ of man pages already exist, e.g. from -mh"
+
+while echo "$1" | egrep '^-' >/dev/null 2>&1 # Get options
+do
+  OPT="$1" ; shift
+  if [ "$OPT" = "--help" -o "$OPT" = "-h" -o "$HELP" = "-help" -o "$HELP" = "yes"  ]; then echo "$USAGE"; exit ; fi
+  if [ "$OPT" = "-keep"   ]; then KEEPTEMP=true; KEEPOPT="-keep"; continue; fi
+  if [ "$OPT" = "-nohtml" ]; then NOTCREATEHTML=true; continue; fi
+  if [ "$OPT" = "-u"   ]; then WHICH=ug; continue; fi
+  if [ "$OPT" = "-gw"  ]; then WHICH=linxgw_ug; continue; fi
+  if [ "$OPT" = "-p"   ]; then WHICH=proto; continue; fi
+  if [ "$OPT" = "-m"   ]; then WHICH=man; continue; fi
+  if [ "$OPT" = "-mh"  ]; then WHICH=manhtml; continue; fi
+  if [ "$OPT" = "-bookp" -o "$OPT" = "-bookproto"   ]; then WHICH=bookproto; continue; fi
+  if [ "$OPT" = "-a"   ]; then WHICH=all; continue; fi
+  echo "ERROR: Unsupported option, see `basename $0` --help"
+  exit
+done
+if [ "$WHICH" = ""   ]; then WHICH=all; fi # Default do all if no arguments
+
+
+
+if [ "$WHICH" = "bookproto" -o "$WHICH" = "all" ] ; then
+ # ***************************************************************************
+ # linx protocols from DocBook XML, create PDF and HTML
+ #
+ # ***************************************************************************
+ {
+   export KEEPOPT
+   if [ -f scripts/make_book_linx ]; then 
+      bash scripts/make_book_linx $KEEPOPT
+   else
+      echo "WARNING: Missing scripts/make_book_linx"
+      echo "         Cannot build doc from DocBook XML book"
+   fi
+ }
+fi
+
+
+
+if [ "$WHICH" = "man" -o "$WHICH" = "all" -o "$WHICH" = "manhtml" ] ; then
+
+ # ***************************************************************************
+ # linx MAN pages Create HTML from MAN-pages (before creating PDF)
+ #
+ # ***************************************************************************
+ (
+  if [ ! "$NOTCREATEHTML" = "true" ]; then
+    MANFILES=`find doc/ -type f -name '*.[1-9]' -print`
+    # Files with only .so references
+    MANSOFILES=`for i in $MANFILES ; do ( if [ \`wc -l < $i\` -lt 4 ] ; then basename $i ; fi ); done`
+
+    if ! type rman >/dev/null 2>&1 ; then echo "No rman available! Can not create HTML man pages" ; exit ; fi
+    rm -rf tmp_mkhtml
+    mkdir tmp_mkhtml
+    cp $MANFILES tmp_mkhtml
+
+    cd tmp_mkhtml
+    echo "CREATE html versions of MAN pages"
+    for i in *.[0-9] ; do ( if [ `wc -l < $i` -ge 4 ] ; then rman -f HTML -r %s.%s.html $i > $i.html ; fi ) ; done
+
+    echo "COPY html files for man pages which are only .so references to other pages"
+    # Needed for links to them to work in html and pdf. Also needs unique title for PDF bookmarks.
+    for i in $MANSOFILES ; do ( 
+      		CMD="cp -p `head -1 $i | sed 's/^\.so man3\///'`.html $i.html" ; $CMD 
+      		NEWTITLE=`echo $i |  tr '[a-z]' '[A-Z]' | sed 's/.\([0-9]\)$/\(\1\) manual page/'`
+
+                if ! egrep -q '<HTML>' linx.7.html ; then # Otherwise ERRONEOUS UPPER CASE HTML tags
+      		  sed  's/<title>LINX.*<\/title>/<title>'"$NEWTITLE"'<\/title>/' <$i.html >x-$i.html
+                else # ERRONEOUS UPPER CASE HTML tags, created by rman in lizard (PolyglotMan v3.0.8+XFree86)
+                  sed  's/<TITLE>LINX.*<\/TITLE>/<TITLE>'"$NEWTITLE"'<\/TITLE>/' <$i.html >x-$i.html
+                fi
+                
+      		mv x-$i.html $i.html
+      		); done
+    find . -size 0b -type f | xargs -i rm {}
+    cd ..
+
+    rm -rf doc/html
+    mkdir doc/html
+    cp -f tmp_mkhtml/*.html doc/html
+    chmod 444 doc/html/*.html
+    if [ ! "$KEEPTEMP" = "true" ]; then rm -rf tmp_mkhtml ; fi
+  fi
+
+ ); fi
+ 
+
+
+
+
+if [ "$WHICH" = "man" -o "$WHICH" = "all" ] ; then
+
+ # ***************************************************************************
+ # linx MAN pages  PDF (from html format)
+ #
+ # Patch: Remove each local TOC and the link to this TOC in each file.
+ # Patch: Use title to create a <h1> outside <head>
+ # Patch: Remove all but the last Copyright texts (insert last the copyright from linx.7)
+ # Note:  Use '--pagemode outline', not 'outlines' (bug in htmldoc's manual)
+ # FIXME: Would be nice if the MAN headers were not funny links
+ # FIXME: Would be nice with a Table-of-Contents. Can htmldoc create one with only MAN entries (h1)?
+ # FIXME: Would be nice with some kind of front page
+ # FIXME: Would be more correct to move h1 down after the <body ....> line (but works OK now anyway)
+ #
+ # ***************************************************************************
+ (
+  cd doc/html
+  OUTPDF=../linxmanpages.pdf
+  echo "Create $OUTPDF"
+
+  if [ ! -f linx.7.html ]; then echo "ERROR: Could nog find html/linx.7.html"; exit ; fi
+  rm -rf x >/dev/null 2>&1
+  if [  -d "x" ]; then echo "ERROR: Could not delete old directory html/x"; exit ; fi
+
+  mkdir x         # Need to keep original html file names for internal links to work
+  if [ ! -d "x" ]; then echo "ERROR: Could not create temporary directory html/x"; exit ; fi
+
+  if ! egrep -q '<HTML>' linx.7.html ; then # Otherwise ERRONEOUS UPPER CASE HTML tags
+  
+  COPYRIGHT=`cat linx.7.html   | sed -n '/<h2><a name=.sec.*>Copyright<\/a><\/h2>/,/<hr>/p'`
+  if [ "$COPYRIGHT" = "" ]; then echo "ERROR: Bad copyright format in linx7.html?"; exit ; fi
+
+  for hfil in *.html ; do
+    if [ ! -f "$hfil" ]; then echo "ERROR: no file $hfil"; exit ; fi
+    cat "$hfil" | sed '/<a href=.#toc.>Table of Contents<\/a><p>/d' \
+                | sed '/<a name=.toc.><b>Table of Contents<\/b>/,/<\/html>/c<\/body><\/html>' \
+    		| sed '/<\/head>/d' \
+    		| sed 's/<title>\(.*\)<\/title>/<title>\1<\/title><\/head><h1>\1<\/h1>/' \
+    		| sed '/<h2><a name=.sec.*>Copyright<\/a><\/h2>/,/<hr><p>/c<hr><p>' \
+    		  >x/$hfil
+  done
+
+  else # ERRONEOUS UPPER CASE HTML tags, created by rman in lizard (PolyglotMan v3.0.8+XFree86)
+   
+  COPYRIGHT=`cat linx.7.html   | sed -n '/<H2><A NAME=.sec.*>Copyright<\/A><\/H2>/,/<HR>/p'`
+  if [ "$COPYRIGHT" = "" ]; then echo "ERROR: Bad copyright format in linx7.html?"; exit ; fi
+
+  for hfil in *.html ; do
+    if [ ! -f "$hfil" ]; then echo "ERROR: no file $hfil"; exit ; fi
+    cat "$hfil" | sed '/<A HREF=.#toc.>Table of Contents<\/A><P>/d' \
+                | sed '/<A NAME=.toc.><B>Table of Contents<\/B>/,/<\/HTML>/c<\/BODY><\/HTML>' \
+    		| sed '/<\/HEAD>/d' \
+    		| sed 's/<TITLE>\(.*\)<\/TITLE>/<TITLE>\1<\/TITLE><\/HEAD><H1>\1<\/H1>/' \
+    		| sed '/<H2><A NAME=.sec.*>Copyright<\/A><\/H2>/,/<HR><P>/c<HR><P>' \
+    		  >x/$hfil
+  done
+  fi
+
+  LASTFILE=`ls x/*.html | tail -1`; if [ -f "$LASTFILE" ]; then echo "$COPYRIGHT" >>$LASTFILE ; fi
+
+  cd x
+  $BINHTMLDOCDIR/bin/htmldoc --batch --book --charset 8859-1 --color \
+     --linkcolor blue --linkstyle plain --bodycolor white \
+     --logoimage ../../enea_logo.png --header lc. \
+     --datadir $BINHTMLDOCDIR/share/htmldoc --format pdf14 --size a4 \
+     --webpage --pagemode outline  \
+     --outfile ../$OUTPDF  *.html
+  chmod g+wr ../$OUTPDF
+  cd ..
+  if [ ! "$KEEPTEMP" = "true" ]; then rm -rf x ; fi
+
+ ) ; fi
+
+
+
+
+
+if [ "$WHICH" = "proto" -o "$WHICH" = "all" -a -f "doc/linxprotocols/linxprotocols.html" ] ; then
+ # ***************************************************************************
+ # linxprotocols PDF  (ignore if no linxprotocols.html exists, assuming book-linx-protocols is used)
+ #
+ # Patch: Separate into multiple files to support pagebreaks
+ # Note:  Use '--pagemode outline', not 'outlines' (bug in htmldoc's manual)
+ # FIXME: Bookmarks not nice now - Create sep. titles in created x/*.html files + open bookmark window
+ #
+ # ***************************************************************************
+ (
+  cd doc/linxprotocols
+  FILE=linxprotocols.html
+  OUTPDF=../linxprotocols.pdf
+  if [ -e $OUTPDF -a ! -w $OUTPDF ]; then echo "ERROR: $OUTPDF cannot be overwritten, see --help"; exit ; fi
+  echo "Create $OUTPDF"
+  
+  if [ ! -f "$FILE" ]; then echo "ERROR: no file linxprotocols/$FILE"; exit ; fi
+  rm -rf x xxtmp.html >/dev/null 2>&1
+  if [  -d "x" ]; then echo "ERROR: Could not delete old tmp directory linxprotocols/x"; exit ; fi
+
+  	# Remove existing table of contents (only if htmldoc will create one?)
+	#  cat "$FILE" | sed '/<div class="pagebreak"><hr \/>$/,/<div class="pagebreak"><hr \/><a name="_Toc142534764"><\/a>/c<div class="pagebreak"><hr \/><a name="_Toc142534764"><\/a>' >xxtmp.html
+  cat "$FILE"  >xxtmp.html
+
+  mkdir x         # Needed to separate into multiple files to support pagebreaks
+  if [ ! -d "x" ]; then echo "ERROR: Could not create temporary directory linxprotocols/x"; exit ; fi
+  cat xxtmp.html | \
+    awk	'BEGIN				{ OUTNUM="1" ;         OUTFILE=sprintf("%s%03d.html","x/linxproto",OUTNUM); 
+    					  INHEADER="1"; print >> OUTFILE; }
+	 INHEADER == "1"		{ HEADER = sprintf("%s%s\n", HEADER, $0); }
+         /<\/head>/			{ INHEADER="0"; }
+	 /<div class="pagebreak">/ 	{ print "\n</body>\n</html>\n" >> OUTFILE ;
+	 				  OUTNUM= OUTNUM + 1 ; OUTFILE=sprintf("%s%03d.html","x/linxproto",OUTNUM); 
+	 				  print HEADER     >> OUTFILE ;
+	 				  print "<body>\n" >> OUTFILE ; }
+					{ print >> OUTFILE ; }
+    	'
+  cp -pr images x/images
+  cd x
+  $BINHTMLDOCDIR/bin/htmldoc --batch --book --charset 8859-1 --color \
+      --linkcolor blue --linkstyle plain --bodycolor white \
+      --logoimage ../../enea_logo.png --header lc. \
+      --datadir $BINHTMLDOCDIR/share/htmldoc --format pdf14 \
+      --size "a4" --toclevels 5  --webpage --pagemode document \
+      --outfile ../$OUTPDF linxproto*.html
+  chmod g+wr ../$OUTPDF
+  cd ..
+  if [ ! "$KEEPTEMP" = "true" ]; then rm -rf x xxtmp.html ; fi
+
+ ) ;fi
+
+
+
+
+
+
+
+if [ "$WHICH" = "ug" -o "$WHICH" = "all" ] ; then
+ # ***************************************************************************
+ # linx usersguide PDF
+ #
+ # Patch: Separate into multiple files to support pagebreaks
+ # Note:  Use '--pagemode outline', not 'outlines' (bug in htmldoc's manual)
+ # FIXME: Bookmarks not nice now - Create sep. titles in created x/*.html files + open bookmark window
+ #
+ # ***************************************************************************  
+ (
+  cd doc/usersguide
+  FILE=UsersGuide_LINX_for_Linux.html
+  OUTPDF=../UsersGuide_LINX_for_Linux.pdf
+  if [ -e $OUTPDF -a ! -w $OUTPDF ]; then echo "ERROR: $OUTPDF cannot be overwritten, see --help"; exit ; fi
+  echo "Create $OUTPDF"
+  
+  if [ ! -f "$FILE" ]; then echo "ERROR: no file usersguide/$FILE"; exit ; fi
+
+  rm -rf x xxtmp.html >/dev/null 2>&1
+  if [  -d "x" ]; then echo "ERROR: Could not delete old tmp directory usersguide/x"; exit ; fi
+
+  		# Remove existing table of contents (only if htmldoc will create one?)
+  		# cat "$FILE" | sed '/<div class="toc">/,/<\/div>/d' >xxtmp.html
+  cat "$FILE"  >xxtmp.html
+
+  mkdir x         # Needed to support pagebreaks, but creating separate files
+  if [ ! -d "x" ]; then echo "ERROR: Could not create temporary directory usersguide/x"; exit ; fi
+  cat xxtmp.html | \
+    awk	'BEGIN				{ OUTNUM="1" ;         OUTFILE=sprintf("%s%03d.html","x/linxug",OUTNUM); 
+    					  INHEADER="1"; print >> OUTFILE; }
+	 INHEADER == "1"		{ HEADER = sprintf("%s%s\n", HEADER, $0); }
+         /<\/head>/			{ INHEADER="0"; }
+	 /<div class="pagebreak">/ 	{ print "\n</body>\n</html>\n" >> OUTFILE ;
+	 				  OUTNUM= OUTNUM + 1 ; OUTFILE=sprintf("%s%03d.html","x/linxug",OUTNUM); 
+	 				  print HEADER     >> OUTFILE ;
+	 				  print "<body>\n" >> OUTFILE ; }
+					{ print >> OUTFILE ; }
+    	'
+  cp -pr images x/images
+  cd x
+  $BINHTMLDOCDIR/bin/htmldoc --batch --book --charset 8859-1 --color --linkcolor blue \
+        --linkstyle plain  --bodycolor white --logoimage ../../enea_logo.png --header "lc." \
+  	--datadir $BINHTMLDOCDIR/share/htmldoc --format pdf14 --size a4 --toclevels 5  \
+  	--webpage --pagemode document \
+  	--outfile ../$OUTPDF  linxug*.html
+  chmod g+wr ../$OUTPDF
+  cd ..
+  if [ ! "$KEEPTEMP" = "true" ]; then rm -rf x xxtmp.html ; fi
+
+) ; fi
+
+
+if [ "$WHICH" = "linxgw_ug" -o "$WHICH" = "all" ] ; then
+ # ***************************************************************************
+ # linx gateway usersguide PDF
+ #
+ # Patch: Separate into multiple files to support pagebreaks
+ # Note:  Use '--pagemode outline', not 'outlines' (bug in htmldoc's manual)
+ # FIXME: Bookmarks not nice now - Create sep. titles in created x/*.html files + open bookmark window
+ #
+ # ***************************************************************************  
+ (
+  cd doc/usersguide
+  FILE=UsersGuide_LINX_Gateway.html
+  OUTPDF=../UsersGuide_LINX_Gateway.pdf
+  if [ -e $OUTPDF -a ! -w $OUTPDF ]; then echo "ERROR: $OUTPDF cannot be overwritten, see --help"; exit ; fi
+  echo "Create $OUTPDF"
+  
+  if [ ! -f "$FILE" ]; then echo "ERROR: no file usersguide/$FILE"; exit ; fi
+
+  rm -rf x xxtmp.html >/dev/null 2>&1
+  if [  -d "x" ]; then echo "ERROR: Could not delete old tmp directory usersguide/x"; exit ; fi
+
+  		# Remove existing table of contents (only if htmldoc will create one?)
+  		# cat "$FILE" | sed '/<div class="toc">/,/<\/div>/d' >xxtmp.html
+  cat "$FILE"  >xxtmp.html
+
+  mkdir x         # Needed to support pagebreaks, but creating separate files
+  if [ ! -d "x" ]; then echo "ERROR: Could not create temporary directory usersguide/x"; exit ; fi
+  cat xxtmp.html | \
+    awk	'BEGIN				{ OUTNUM="1" ;         OUTFILE=sprintf("%s%03d.html","x/linxug",OUTNUM); 
+    					  INHEADER="1"; print >> OUTFILE; }
+	 INHEADER == "1"		{ HEADER = sprintf("%s%s\n", HEADER, $0); }
+         /<\/head>/			{ INHEADER="0"; }
+	 /<div class="pagebreak">/ 	{ print "\n</body>\n</html>\n" >> OUTFILE ;
+	 				  OUTNUM= OUTNUM + 1 ; OUTFILE=sprintf("%s%03d.html","x/linxug",OUTNUM); 
+	 				  print HEADER     >> OUTFILE ;
+	 				  print "<body>\n" >> OUTFILE ; }
+					{ print >> OUTFILE ; }
+    	'
+  cp -pr images x/images
+  cd x
+  $BINHTMLDOCDIR/bin/htmldoc --batch --book --charset 8859-1 --color --linkcolor blue \
+        --linkstyle plain  --bodycolor white --logoimage ../../enea_logo.png --header "lc." \
+  	--datadir $BINHTMLDOCDIR/share/htmldoc --format pdf14 --size a4 --toclevels 5  \
+  	--webpage --pagemode document \
+  	--outfile ../$OUTPDF  linxug*.html
+  chmod g+wr ../$OUTPDF
+  cd ..
+  if [ ! "$KEEPTEMP" = "true" ]; then rm -rf x xxtmp.html ; fi
+
+) ; fi
+
+# ****************************************************************************
+
+if [ "$WHICH" = "" ]; then
+  echo "ERROR: Unsupported option, see `basename $0` --help"
+  exit 1
+fi
+
+echo "Ready creating LINX doc"

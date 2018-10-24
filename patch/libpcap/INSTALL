@@ -1,0 +1,14 @@
+Download libpcap-1.0.0.tar.gz to <mydir>.
+
+Copy libpcap-1.0.0-linxtrace-001.patch to <mydir>. 
+
+> cd <mydir>
+> tar -xvf libpcap-1.0.0.tar.gz
+> patch -p1 < libpcap-1.0.0-linxtrace-001.patch
+> cd tcpdump-1.0.0
+
+Must be configured with ipv6 support otherwise tcpdump 4.0.0 won't build.
+
+> ./configure -enable-ipv6
+> make
+> make install

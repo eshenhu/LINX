@@ -1,0 +1,1584 @@
+diff -crBN old/wireshark-1.0.6/configure new/wireshark-1.0.6/configure
+*** old/wireshark-1.0.6/configure	2009-03-23 13:48:24.312000000 +0100
+--- new/wireshark-1.0.6/configure	2009-03-23 13:54:57.665000000 +0100
+***************
+*** 34837,34843 ****
+  
+  ac_config_headers="$ac_config_headers config.h"
+  
+! ac_config_files="$ac_config_files Makefile doxygen.cfg asn1/Makefile asn1/acp133/Makefile asn1/acse/Makefile asn1/ansi_map/Makefile asn1/ansi-tcap/Makefile asn1/camel/Makefile asn1/cdt/Makefile asn1/cmip/Makefile asn1/cms/Makefile asn1/dap/Makefile asn1/disp/Makefile asn1/dop/Makefile asn1/dsp/Makefile asn1/ess/Makefile asn1/ftam/Makefile asn1/gnm/Makefile asn1/gsmmap/Makefile asn1/h225/Makefile asn1/h235/Makefile asn1/h245/Makefile asn1/h248/Makefile asn1/h282/Makefile asn1/h283/Makefile asn1/h323/Makefile asn1/h450/Makefile asn1/h450-ros/Makefile asn1/h460/Makefile asn1/h501/Makefile asn1/inap/Makefile asn1/ldap/Makefile asn1/logotype-cert-extn/Makefile asn1/mms/Makefile asn1/mpeg-audio/Makefile asn1/mpeg-pes/Makefile asn1/nbap/Makefile asn1/ns-cert-exts/Makefile asn1/ocsp/Makefile asn1/p7/Makefile asn1/pcap/Makefile asn1/pkcs1/Makefile asn1/pkcs12/Makefile asn1/pkinit/Makefile asn1/pkix1explicit/Makefile asn1/pkix1implicit/Makefile asn1/pkixcmp/Makefile asn1/pkixcrmf/Makefile asn1/pkixproxy/Makefile asn1/pkixqualified/Makefile asn1/pkixtsp/Makefile asn1/pres/Makefile asn1/q932/Makefile asn1/q932-ros/Makefile asn1/qsig/Makefile asn1/ranap/Makefile asn1/rnsap/Makefile asn1/ros/Makefile asn1/rrc/Makefile asn1/rrlp/Makefile asn1/rtse/Makefile asn1/s1ap/Makefile asn1/s4406/Makefile asn1/sabp/Makefile asn1/smrse/Makefile asn1/snmp/Makefile asn1/spnego/Makefile asn1/t125/Makefile asn1/t38/Makefile asn1/tcap/Makefile asn1/ulp/Makefile asn1/wlancertextn/Makefile asn1/x2ap/Makefile asn1/x411/Makefile asn1/x420/Makefile asn1/x509af/Makefile asn1/x509ce/Makefile asn1/x509if/Makefile asn1/x509sat/Makefile asn1/x721/Makefile doc/Makefile epan/Makefile epan/crypt/Makefile epan/doxygen.cfg epan/dfilter/Makefile epan/dissectors/Makefile epan/ftypes/Makefile epan/wslua/Makefile codecs/Makefile gtk/Makefile gtk/doxygen.cfg help/Makefile packaging/Makefile packaging/macosx/Info.plist packaging/nsis/Makefile packaging/rpm/Makefile packaging/rpm/SPECS/Makefile packaging/rpm/SPECS/wireshark.spec packaging/svr4/Makefile packaging/svr4/checkinstall packaging/svr4/pkginfo plugins/Makefile plugins/agentx/Makefile plugins/artnet/Makefile plugins/asn1/Makefile plugins/ciscosm/Makefile plugins/docsis/Makefile plugins/enttec/Makefile plugins/ethercat/Makefile plugins/giop/Makefile plugins/gryphon/Makefile plugins/infiniband/Makefile plugins/irda/Makefile plugins/lwres/Makefile plugins/m2m/Makefile plugins/mate/Makefile plugins/opcua/Makefile plugins/opsi/Makefile plugins/pcli/Makefile plugins/profinet/Makefile plugins/rlm/Makefile plugins/rtnet/Makefile plugins/rudp/Makefile plugins/sbus/Makefile plugins/stats_tree/Makefile plugins/unistim/Makefile plugins/v5ua/Makefile plugins/wimax/Makefile plugins/wimaxasncp/Makefile tools/Makefile tools/idl2wrs.sh tools/lemon/Makefile wiretap/Makefile"
+  
+  cat >confcache <<\_ACEOF
+  # This file is a shell script that caches the results of configure
+--- 34837,34843 ----
+  
+  ac_config_headers="$ac_config_headers config.h"
+  
+! ac_config_files="$ac_config_files Makefile doxygen.cfg asn1/Makefile asn1/acp133/Makefile asn1/acse/Makefile asn1/ansi_map/Makefile asn1/ansi-tcap/Makefile asn1/camel/Makefile asn1/cdt/Makefile asn1/cmip/Makefile asn1/cms/Makefile asn1/dap/Makefile asn1/disp/Makefile asn1/dop/Makefile asn1/dsp/Makefile asn1/ess/Makefile asn1/ftam/Makefile asn1/gnm/Makefile asn1/gsmmap/Makefile asn1/h225/Makefile asn1/h235/Makefile asn1/h245/Makefile asn1/h248/Makefile asn1/h282/Makefile asn1/h283/Makefile asn1/h323/Makefile asn1/h450/Makefile asn1/h450-ros/Makefile asn1/h460/Makefile asn1/h501/Makefile asn1/inap/Makefile asn1/ldap/Makefile asn1/logotype-cert-extn/Makefile asn1/mms/Makefile asn1/mpeg-audio/Makefile asn1/mpeg-pes/Makefile asn1/nbap/Makefile asn1/ns-cert-exts/Makefile asn1/ocsp/Makefile asn1/p7/Makefile asn1/pcap/Makefile asn1/pkcs1/Makefile asn1/pkcs12/Makefile asn1/pkinit/Makefile asn1/pkix1explicit/Makefile asn1/pkix1implicit/Makefile asn1/pkixcmp/Makefile asn1/pkixcrmf/Makefile asn1/pkixproxy/Makefile asn1/pkixqualified/Makefile asn1/pkixtsp/Makefile asn1/pres/Makefile asn1/q932/Makefile asn1/q932-ros/Makefile asn1/qsig/Makefile asn1/ranap/Makefile asn1/rnsap/Makefile asn1/ros/Makefile asn1/rrc/Makefile asn1/rrlp/Makefile asn1/rtse/Makefile asn1/s1ap/Makefile asn1/s4406/Makefile asn1/sabp/Makefile asn1/smrse/Makefile asn1/snmp/Makefile asn1/spnego/Makefile asn1/t125/Makefile asn1/t38/Makefile asn1/tcap/Makefile asn1/ulp/Makefile asn1/wlancertextn/Makefile asn1/x2ap/Makefile asn1/x411/Makefile asn1/x420/Makefile asn1/x509af/Makefile asn1/x509ce/Makefile asn1/x509if/Makefile asn1/x509sat/Makefile asn1/x721/Makefile doc/Makefile epan/Makefile epan/crypt/Makefile epan/doxygen.cfg epan/dfilter/Makefile epan/dissectors/Makefile epan/ftypes/Makefile epan/wslua/Makefile codecs/Makefile gtk/Makefile gtk/doxygen.cfg help/Makefile packaging/Makefile packaging/macosx/Info.plist packaging/nsis/Makefile packaging/rpm/Makefile packaging/rpm/SPECS/Makefile packaging/rpm/SPECS/wireshark.spec packaging/svr4/Makefile packaging/svr4/checkinstall packaging/svr4/pkginfo plugins/Makefile plugins/agentx/Makefile plugins/artnet/Makefile plugins/asn1/Makefile plugins/ciscosm/Makefile plugins/docsis/Makefile plugins/enttec/Makefile plugins/ethercat/Makefile plugins/giop/Makefile plugins/gryphon/Makefile plugins/infiniband/Makefile plugins/irda/Makefile plugins/linxdisc/Makefile plugins/lwres/Makefile plugins/m2m/Makefile plugins/mate/Makefile plugins/opcua/Makefile plugins/opsi/Makefile plugins/pcli/Makefile plugins/profinet/Makefile plugins/rlm/Makefile plugins/rtnet/Makefile plugins/rudp/Makefile plugins/sbus/Makefile plugins/stats_tree/Makefile plugins/unistim/Makefile plugins/v5ua/Makefile plugins/wimax/Makefile plugins/wimaxasncp/Makefile tools/Makefile tools/idl2wrs.sh tools/lemon/Makefile wiretap/Makefile"
+  
+  cat >confcache <<\_ACEOF
+  # This file is a shell script that caches the results of configure
+***************
+*** 35636,35641 ****
+--- 35636,35642 ----
+      "plugins/gryphon/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/gryphon/Makefile" ;;
+      "plugins/infiniband/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/infiniband/Makefile" ;;
+      "plugins/irda/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/irda/Makefile" ;;
++     "plugins/linxdisc/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/linxdisc/Makefile" ;;
+      "plugins/lwres/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/lwres/Makefile" ;;
+      "plugins/m2m/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/m2m/Makefile" ;;
+      "plugins/mate/Makefile") CONFIG_FILES="$CONFIG_FILES plugins/mate/Makefile" ;;
+diff -crBN old/wireshark-1.0.6/configure.in new/wireshark-1.0.6/configure.in
+*** old/wireshark-1.0.6/configure.in	2009-03-23 13:48:24.358000000 +0100
+--- new/wireshark-1.0.6/configure.in	2009-03-23 13:55:41.729000000 +0100
+***************
+*** 1707,1712 ****
+--- 1707,1713 ----
+    plugins/gryphon/Makefile
+    plugins/infiniband/Makefile
+    plugins/irda/Makefile
++   plugins/linxdisc/Makefile
+    plugins/lwres/Makefile
+    plugins/m2m/Makefile
+    plugins/mate/Makefile
+diff -crBN old/wireshark-1.0.6/Makefile.am new/wireshark-1.0.6/Makefile.am
+*** old/wireshark-1.0.6/Makefile.am	2009-03-23 13:48:10.124000000 +0100
+--- new/wireshark-1.0.6/Makefile.am	2009-03-23 13:56:39.527000000 +0100
+***************
+*** 250,255 ****
+--- 250,256 ----
+  	-dlopen plugins/gryphon/gryphon.la \
+  	-dlopen plugins/infiniband/infiniband.la \
+  	-dlopen plugins/irda/irda.la \
++ 	-dlopen plugins/linxdisc/linxdisc.la \
+  	-dlopen plugins/lwres/lwres.la \
+  	-dlopen plugins/m2m/m2m.la \
+  	-dlopen plugins/mate/mate.la \
+diff -crBN old/wireshark-1.0.6/Makefile.in new/wireshark-1.0.6/Makefile.in
+*** old/wireshark-1.0.6/Makefile.in	2009-03-23 13:48:10.138000000 +0100
+--- new/wireshark-1.0.6/Makefile.in	2009-03-23 13:58:04.126000000 +0100
+***************
+*** 9,15 ****
+  
+  # This program is distributed in the hope that it will be useful,
+  # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+! # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+  # PARTICULAR PURPOSE.
+  
+  @SET_MAKE@
+--- 9,15 ----
+  
+  # This program is distributed in the hope that it will be useful,
+  # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+! # even the implied warranty of MERCHANTABILITY or FITNESS OR A
+  # PARTICULAR PURPOSE.
+  
+  @SET_MAKE@
+***************
+*** 144,149 ****
+--- 144,150 ----
+  @HAVE_PLUGINS_TRUE@	plugins/gryphon/gryphon.la \
+  @HAVE_PLUGINS_TRUE@	plugins/infiniband/infiniband.la \
+  @HAVE_PLUGINS_TRUE@	plugins/irda/irda.la plugins/lwres/lwres.la \
++ @HAVE_PLUGINS_TRUE@	plugins/irda/irda.la plugins/linxdisc/linxdisc.la \
+  @HAVE_PLUGINS_TRUE@	plugins/m2m/m2m.la plugins/mate/mate.la \
+  @HAVE_PLUGINS_TRUE@	plugins/opcua/opcua.la plugins/opsi/opsi.la \
+  @HAVE_PLUGINS_TRUE@	plugins/pcli/pcli.la \
+***************
+*** 751,756 ****
+--- 752,758 ----
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/gryphon/gryphon.la \
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/infiniband/infiniband.la \
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/irda/irda.la \
++ @HAVE_PLUGINS_TRUE@     -dlopen plugins/linxdisc/linxdisc.la \
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/lwres/lwres.la \
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/m2m/m2m.la \
+  @HAVE_PLUGINS_TRUE@	-dlopen plugins/mate/mate.la \
+diff -crBN old/wireshark-1.0.6/Makefile.nmake new/wireshark-1.0.6/Makefile.nmake
+*** old/wireshark-1.0.6/Makefile.nmake	2009-03-23 13:48:10.144000000 +0100
+--- new/wireshark-1.0.6/Makefile.nmake	2009-03-23 14:01:00.254000000 +0100
+***************
+*** 1014,1019 ****
+--- 1014,1020 ----
+  	xcopy ".\plugins\gryphon\gryphon.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+  	xcopy ".\plugins\infiniband\infiniband.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+  	xcopy ".\plugins\irda\irda.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
++ 	xcopy ".\plugins\linxdisc\linxdisc.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+  	xcopy ".\plugins\lwres\lwres.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+  	xcopy ".\plugins\m2m\m2m.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+  	xcopy ".\plugins\mate\mate.dll" $(INSTALL_DIR)\plugins\$(VERSION) /d
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/AUTHORS new/wireshark-1.0.6/plugins/linxdisc/AUTHORS
+*** old/wireshark-1.0.6/plugins/linxdisc/AUTHORS	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/AUTHORS	2009-03-23 14:01:46.171000000 +0100
+***************
+*** 0 ****
+--- 1,2 ----
++ Author :
++ Josep Puigdemont <josep.puigdemont@enea.com>
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/Makefile.am new/wireshark-1.0.6/plugins/linxdisc/Makefile.am
+*** old/wireshark-1.0.6/plugins/linxdisc/Makefile.am	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/Makefile.am	2009-03-23 14:01:46.196000000 +0100
+***************
+*** 0 ****
+--- 1,125 ----
++ # Makefile.am
++ # Automake file for Linxdisc plugin
++ #
++ # $Id: Makefile.am 24488 2008-02-27 16:18:30Z stig $
++ #
++ # Wireshark - Network traffic analyzer
++ # By Gerald Combs <gerald@wireshark.org>
++ # Copyright 1998 Gerald Combs
++ # 
++ # This program is free software; you can redistribute it and/or
++ # modify it under the terms of the GNU General Public License
++ # as published by the Free Software Foundation; either version 2
++ # of the License, or (at your option) any later version.
++ # 
++ # This program is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY; without even the implied warranty of
++ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ # GNU General Public License for more details.
++ # 
++ # You should have received a copy of the GNU General Public License
++ # along with this program; if not, write to the Free Software
++ # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ #
++ 
++ INCLUDES = -I$(top_srcdir) -I$(includedir)
++ 
++ include Makefile.common
++ 
++ if HAVE_WARNINGS_AS_ERRORS
++ AM_CFLAGS = -Werror
++ endif
++ 
++ plugindir = @plugindir@
++ 
++ plugin_LTLIBRARIES = linxdisc.la
++ linxdisc_la_SOURCES = \
++ 	plugin.c \
++ 	moduleinfo.h \
++ 	$(DISSECTOR_SRC) \
++ 	$(DISSECTOR_SUPPORT_SRC) \
++ 	$(DISSECTOR_INCLUDES)
++ linxdisc_la_LDFLAGS = -module -avoid-version
++ linxdisc_la_LIBADD = @PLUGIN_LIBS@
++ 
++ # Libs must be cleared, or else libtool won't create a shared module.
++ # If your module needs to be linked against any particular libraries,
++ # add them here.
++ LIBS =
++ 
++ #
++ # Build plugin.c, which contains the plugin version[] string, a
++ # function plugin_register() that calls the register routines for all
++ # protocols, and a function plugin_reg_handoff() that calls the handoff
++ # registration routines for all protocols.
++ #
++ # We do this by scanning sources.  If that turns out to be too slow,
++ # maybe we could just require every .o file to have an register routine
++ # of a given name (packet-aarp.o -> proto_register_aarp, etc.).
++ #
++ # Formatting conventions:  The name of the proto_register_* routines an
++ # proto_reg_handoff_* routines must start in column zero, or must be
++ # preceded only by "void " starting in column zero, and must not be
++ # inside #if.
++ #
++ # DISSECTOR_SRC is assumed to have all the files that need to be scanned.
++ #
++ # For some unknown reason, having a big "for" loop in the Makefile
++ # to scan all the files doesn't work with some "make"s; they seem to
++ # pass only the first few names in the list to the shell, for some
++ # reason.
++ #
++ # Therefore, we have a script to generate the plugin.c file.
++ # The shell script runs slowly, as multiple greps and seds are run
++ # for each input file; this is especially slow on Windows.  Therefore,
++ # if Python is present (as indicated by PYTHON being defined), we run
++ # a faster Python script to do that work instead.
++ #
++ # The first argument is the directory in which the source files live.
++ # The second argument is "plugin", to indicate that we should build
++ # a plugin.c file for a plugin.
++ # All subsequent arguments are the files to scan.
++ #
++ plugin.c: $(DISSECTOR_SRC) $(top_srcdir)/tools/make-dissector-reg \
++     $(top_srcdir)/tools/make-dissector-reg.py
++ 	@if test -n "$(PYTHON)"; then \
++ 		echo Making plugin.c with python ; \
++ 		$(PYTHON) $(top_srcdir)/tools/make-dissector-reg.py $(srcdir) \
++ 		    plugin $(DISSECTOR_SRC) ; \
++ 	else \
++ 		echo Making plugin.c with shell script ; \
++ 		$(top_srcdir)/tools/make-dissector-reg $(srcdir) \
++ 		    $(plugin_src) plugin $(DISSECTOR_SRC) ; \
++ 	fi
++ 
++ #
++ # Currently plugin.c can be included in the distribution because
++ # we always build all protocol dissectors. We used to have to check
++ # whether or not to build the snmp dissector. If we again need to
++ # variably build something, making plugin.c non-portable, uncomment
++ # the dist-hook line below.
++ #
++ # Oh, yuk.  We don't want to include "plugin.c" in the distribution, as
++ # its contents depend on the configuration, and therefore we want it
++ # to be built when the first "make" is done; however, Automake insists
++ # on putting *all* source into the distribution.
++ #
++ # We work around this by having a "dist-hook" rule that deletes
++ # "plugin.c", so that "dist" won't pick it up.
++ #
++ #dist-hook:
++ #	@rm -f $(distdir)/plugin.c
++ 
++ CLEANFILES = \
++ 	linxdisc \
++ 	*~
++ 
++ MAINTAINERCLEANFILES = \
++ 	Makefile.in	\
++ 	plugin.c
++ 
++ EXTRA_DIST = \
++ 	Makefile.common		\
++ 	Makefile.nmake		\
++ 	moduleinfo.nmake	\
++ 	plugin.rc.in
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/Makefile.common new/wireshark-1.0.6/plugins/linxdisc/Makefile.common
+*** old/wireshark-1.0.6/plugins/linxdisc/Makefile.common	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/Makefile.common	2009-03-23 14:01:46.199000000 +0100
+***************
+*** 0 ****
+--- 1,39 ----
++ # Makefile.common for linxdisc plugin
++ #     Contains the stuff from Makefile.am and Makefile.nmake that is
++ #     a) common to both files and
++ #     b) portable between both files
++ #
++ # $Id: Makefile.common 23848 2007-12-12 22:10:50Z jake $
++ #
++ # Wireshark - Network traffic analyzer
++ # By Gerald Combs <gerald@wireshark.org>
++ # Copyright 1998 Gerald Combs
++ #
++ # This program is free software; you can redistribute it and/or
++ # modify it under the terms of the GNU General Public License
++ # as published by the Free Software Foundation; either version 2
++ # of the License, or (at your option) any later version.
++ #
++ # This program is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY; without even the implied warranty of
++ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ # GNU General Public License for more details.
++ #
++ # You should have received a copy of the GNU General Public License
++ # along with this program; if not, write to the Free Software
++ # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ 
++ # the name of the plugin
++ PLUGIN_NAME = linxdisc
++ 
++ # the dissector sources (without any helpers)
++ DISSECTOR_SRC = \
++ 	packet-linxdisc.c
++ 
++ # corresponding headers
++ DISSECTOR_INCLUDES =
++ 
++ # Dissector helpers. They're included in the source files in this
++ # directory, but they're not dissectors themselves, i.e. they're not
++ # used to generate "plugin.c".
++ DISSECTOR_SUPPORT_SRC =
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/Makefile.in new/wireshark-1.0.6/plugins/linxdisc/Makefile.in
+*** old/wireshark-1.0.6/plugins/linxdisc/Makefile.in	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/Makefile.in	2009-03-23 14:01:46.223000000 +0100
+***************
+*** 0 ****
+--- 1,759 ----
++ # Makefile.in generated by automake 1.10 from Makefile.am.
++ # @configure_input@
++ 
++ # Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
++ # 2003, 2004, 2005, 2006  Free Software Foundation, Inc.
++ # This Makefile.in is free software; the Free Software Foundation
++ # gives unlimited permission to copy and/or distribute it,
++ # with or without modifications, as long as this notice is preserved.
++ 
++ # This program is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
++ # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
++ # PARTICULAR PURPOSE.
++ 
++ @SET_MAKE@
++ 
++ # Makefile.am
++ # Automake file for Linxdisc plugin
++ #
++ # $Id: Makefile.am 24488 2008-02-27 16:18:30Z stig $
++ #
++ # Wireshark - Network traffic analyzer
++ # By Gerald Combs <gerald@wireshark.org>
++ # Copyright 1998 Gerald Combs
++ # 
++ # This program is free software; you can redistribute it and/or
++ # modify it under the terms of the GNU General Public License
++ # as published by the Free Software Foundation; either version 2
++ # of the License, or (at your option) any later version.
++ # 
++ # This program is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY; without even the implied warranty of
++ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ # GNU General Public License for more details.
++ # 
++ # You should have received a copy of the GNU General Public License
++ # along with this program; if not, write to the Free Software
++ # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ #
++ 
++ # Makefile.common for linxdisc plugin
++ #     Contains the stuff from Makefile.am and Makefile.nmake that is
++ #     a) common to both files and
++ #     b) portable between both files
++ #
++ # $Id: Makefile.common 23848 2007-12-12 22:10:50Z jake $
++ #
++ # Wireshark - Network traffic analyzer
++ # By Gerald Combs <gerald@wireshark.org>
++ # Copyright 1998 Gerald Combs
++ #
++ # This program is free software; you can redistribute it and/or
++ # modify it under the terms of the GNU General Public License
++ # as published by the Free Software Foundation; either version 2
++ # of the License, or (at your option) any later version.
++ #
++ # This program is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY; without even the implied warranty of
++ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ # GNU General Public License for more details.
++ #
++ # You should have received a copy of the GNU General Public License
++ # along with this program; if not, write to the Free Software
++ # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++ 
++ VPATH = @srcdir@
++ pkgdatadir = $(datadir)/@PACKAGE@
++ pkglibdir = $(libdir)/@PACKAGE@
++ pkgincludedir = $(includedir)/@PACKAGE@
++ am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
++ install_sh_DATA = $(install_sh) -c -m 644
++ install_sh_PROGRAM = $(install_sh) -c
++ install_sh_SCRIPT = $(install_sh) -c
++ INSTALL_HEADER = $(INSTALL_DATA)
++ transform = $(program_transform_name)
++ NORMAL_INSTALL = :
++ PRE_INSTALL = :
++ POST_INSTALL = :
++ NORMAL_UNINSTALL = :
++ PRE_UNINSTALL = :
++ POST_UNINSTALL = :
++ build_triplet = @build@
++ host_triplet = @host@
++ target_triplet = @target@
++ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.common \
++ 	$(srcdir)/Makefile.in AUTHORS
++ subdir = plugins/linxdisc
++ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
++ am__aclocal_m4_deps = $(top_srcdir)/aclocal-fallback/glib-2.0.m4 \
++ 	$(top_srcdir)/aclocal-fallback/glib.m4 \
++ 	$(top_srcdir)/aclocal-fallback/gtk-2.0.m4 \
++ 	$(top_srcdir)/aclocal-fallback/gtk.m4 \
++ 	$(top_srcdir)/aclocal-fallback/iconv.m4 \
++ 	$(top_srcdir)/aclocal-fallback/libgcrypt.m4 \
++ 	$(top_srcdir)/aclocal-fallback/libgnutls.m4 \
++ 	$(top_srcdir)/aclocal-fallback/libsmi.m4 \
++ 	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.in
++ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
++ 	$(ACLOCAL_M4)
++ mkinstalldirs = $(install_sh) -d
++ CONFIG_HEADER = $(top_builddir)/config.h
++ CONFIG_CLEAN_FILES =
++ am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
++ am__vpath_adj = case $$p in \
++     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
++     *) f=$$p;; \
++   esac;
++ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
++ am__installdirs = "$(DESTDIR)$(plugindir)"
++ pluginLTLIBRARIES_INSTALL = $(INSTALL)
++ LTLIBRARIES = $(plugin_LTLIBRARIES)
++ linxdisc_la_DEPENDENCIES =
++ am__objects_1 = packet-linxdisc.lo
++ am__objects_2 =
++ am_linxdisc_la_OBJECTS = plugin.lo $(am__objects_1) $(am__objects_2) \
++ 	$(am__objects_2)
++ linxdisc_la_OBJECTS = $(am_linxdisc_la_OBJECTS)
++ linxdisc_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
++ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
++ 	$(linxdisc_la_LDFLAGS) $(LDFLAGS) -o $@
++ DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
++ depcomp = $(SHELL) $(top_srcdir)/depcomp
++ am__depfiles_maybe = depfiles
++ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
++ 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
++ LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
++ 	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
++ 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
++ CCLD = $(CC)
++ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
++ 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
++ 	$(LDFLAGS) -o $@
++ SOURCES = $(linxdisc_la_SOURCES)
++ DIST_SOURCES = $(linxdisc_la_SOURCES)
++ ETAGS = etags
++ CTAGS = ctags
++ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
++ ACLOCAL = @ACLOCAL@
++ ADNS_LIBS = @ADNS_LIBS@
++ AMTAR = @AMTAR@
++ AR = @AR@
++ AUTOCONF = @AUTOCONF@
++ AUTOHEADER = @AUTOHEADER@
++ AUTOMAKE = @AUTOMAKE@
++ AWK = @AWK@
++ CC = @CC@
++ CCDEPMODE = @CCDEPMODE@
++ CC_FOR_BUILD = @CC_FOR_BUILD@
++ CFLAGS = @CFLAGS@
++ CPP = @CPP@
++ CPPFLAGS = @CPPFLAGS@
++ CXX = @CXX@
++ CXXCPP = @CXXCPP@
++ CXXDEPMODE = @CXXDEPMODE@
++ CXXFLAGS = @CXXFLAGS@
++ CYGPATH_W = @CYGPATH_W@
++ DEFS = @DEFS@
++ DEPDIR = @DEPDIR@
++ DOXYGEN = @DOXYGEN@
++ ECHO = @ECHO@
++ ECHO_C = @ECHO_C@
++ ECHO_N = @ECHO_N@
++ ECHO_T = @ECHO_T@
++ EGREP = @EGREP@
++ ENABLE_STATIC = @ENABLE_STATIC@
++ EXEEXT = @EXEEXT@
++ F77 = @F77@
++ FFLAGS = @FFLAGS@
++ FLEX_PATH = @FLEX_PATH@
++ FOP = @FOP@
++ FRAMEWORKS = @FRAMEWORKS@
++ GETOPT_C = @GETOPT_C@
++ GETOPT_O = @GETOPT_O@
++ GLIB_CFLAGS = @GLIB_CFLAGS@
++ GLIB_CONFIG = @GLIB_CONFIG@
++ GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
++ GLIB_LIBS = @GLIB_LIBS@
++ GLIB_MKENUMS = @GLIB_MKENUMS@
++ GOBJECT_QUERY = @GOBJECT_QUERY@
++ GREP = @GREP@
++ GTK_CFLAGS = @GTK_CFLAGS@
++ GTK_CONFIG = @GTK_CONFIG@
++ GTK_LIBS = @GTK_LIBS@
++ G_ASCII_STRCASECMP_C = @G_ASCII_STRCASECMP_C@
++ G_ASCII_STRCASECMP_LO = @G_ASCII_STRCASECMP_LO@
++ G_ASCII_STRCASECMP_O = @G_ASCII_STRCASECMP_O@
++ G_ASCII_STRTOULL_C = @G_ASCII_STRTOULL_C@
++ G_ASCII_STRTOULL_LO = @G_ASCII_STRTOULL_LO@
++ G_ASCII_STRTOULL_O = @G_ASCII_STRTOULL_O@
++ HAVE_DOXYGEN = @HAVE_DOXYGEN@
++ HAVE_FOP = @HAVE_FOP@
++ HAVE_HHC = @HAVE_HHC@
++ HAVE_PKGMK = @HAVE_PKGMK@
++ HAVE_PKGPROTO = @HAVE_PKGPROTO@
++ HAVE_PKGTRANS = @HAVE_PKGTRANS@
++ HAVE_RPM = @HAVE_RPM@
++ HAVE_SVR4_PACKAGING = @HAVE_SVR4_PACKAGING@
++ HAVE_XMLLINT = @HAVE_XMLLINT@
++ HAVE_XSLTPROC = @HAVE_XSLTPROC@
++ HHC = @HHC@
++ HTML_VIEWER = @HTML_VIEWER@
++ INET_ATON_C = @INET_ATON_C@
++ INET_ATON_LO = @INET_ATON_LO@
++ INET_ATON_O = @INET_ATON_O@
++ INET_NTOP_C = @INET_NTOP_C@
++ INET_NTOP_LO = @INET_NTOP_LO@
++ INET_NTOP_O = @INET_NTOP_O@
++ INET_PTON_C = @INET_PTON_C@
++ INET_PTON_LO = @INET_PTON_LO@
++ INET_PTON_O = @INET_PTON_O@
++ INSTALL = @INSTALL@
++ INSTALL_DATA = @INSTALL_DATA@
++ INSTALL_PROGRAM = @INSTALL_PROGRAM@
++ INSTALL_SCRIPT = @INSTALL_SCRIPT@
++ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
++ KRB5_CONFIG = @KRB5_CONFIG@
++ KRB5_LIBS = @KRB5_LIBS@
++ LDFLAGS = @LDFLAGS@
++ LDFLAGS_SHAREDLIB = @LDFLAGS_SHAREDLIB@
++ LEX = @LEX@
++ LEXDUMMY = @LEXDUMMY@
++ LEXLIB = @LEXLIB@
++ LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
++ LIBCAP_LIBS = @LIBCAP_LIBS@
++ LIBGCRYPT_CFLAGS = @LIBGCRYPT_CFLAGS@
++ LIBGCRYPT_CONFIG = @LIBGCRYPT_CONFIG@
++ LIBGCRYPT_LIBS = @LIBGCRYPT_LIBS@
++ LIBGNUTLS_CFLAGS = @LIBGNUTLS_CFLAGS@
++ LIBGNUTLS_CONFIG = @LIBGNUTLS_CONFIG@
++ LIBGNUTLS_LIBS = @LIBGNUTLS_LIBS@
++ LIBICONV = @LIBICONV@
++ LIBOBJS = @LIBOBJS@
++ 
++ # Libs must be cleared, or else libtool won't create a shared module.
++ # If your module needs to be linked against any particular libraries,
++ # add them here.
++ LIBS = 
++ LIBSMI_CFLAGS = @LIBSMI_CFLAGS@
++ LIBSMI_LDFLAGS = @LIBSMI_LDFLAGS@
++ LIBSMI_VERSION = @LIBSMI_VERSION@
++ LIBTOOL = @LIBTOOL@
++ LIBTOOL_DEPS = @LIBTOOL_DEPS@
++ LN_S = @LN_S@
++ LTLIBOBJS = @LTLIBOBJS@
++ LUA_INCLUDES = @LUA_INCLUDES@
++ LUA_LIBS = @LUA_LIBS@
++ MAKEINFO = @MAKEINFO@
++ MKDIR_P = @MKDIR_P@
++ MKSTEMP_C = @MKSTEMP_C@
++ MKSTEMP_O = @MKSTEMP_O@
++ NSL_LIBS = @NSL_LIBS@
++ OBJEXT = @OBJEXT@
++ PACKAGE = @PACKAGE@
++ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
++ PACKAGE_NAME = @PACKAGE_NAME@
++ PACKAGE_STRING = @PACKAGE_STRING@
++ PACKAGE_TARNAME = @PACKAGE_TARNAME@
++ PACKAGE_VERSION = @PACKAGE_VERSION@
++ PATH_SEPARATOR = @PATH_SEPARATOR@
++ PCAP_LIBS = @PCAP_LIBS@
++ PCRE_LIBS = @PCRE_LIBS@
++ PERL = @PERL@
++ PKG_CONFIG = @PKG_CONFIG@
++ PLUGIN_LIBS = @PLUGIN_LIBS@
++ POD2HTML = @POD2HTML@
++ POD2MAN = @POD2MAN@
++ PORTAUDIO_INCLUDES = @PORTAUDIO_INCLUDES@
++ PORTAUDIO_LIBS = @PORTAUDIO_LIBS@
++ PYTHON = @PYTHON@
++ RANLIB = @RANLIB@
++ SED = @SED@
++ SET_MAKE = @SET_MAKE@
++ SHELL = @SHELL@
++ SOCKET_LIBS = @SOCKET_LIBS@
++ SSL_LIBS = @SSL_LIBS@
++ STRCASECMP_C = @STRCASECMP_C@
++ STRCASECMP_O = @STRCASECMP_O@
++ STRERROR_C = @STRERROR_C@
++ STRERROR_O = @STRERROR_O@
++ STRIP = @STRIP@
++ STRNCASECMP_C = @STRNCASECMP_C@
++ STRNCASECMP_O = @STRNCASECMP_O@
++ STRPTIME_C = @STRPTIME_C@
++ STRPTIME_O = @STRPTIME_O@
++ VERSION = @VERSION@
++ XMLLINT = @XMLLINT@
++ XSLTPROC = @XSLTPROC@
++ YACC = @YACC@
++ YACCDUMMY = @YACCDUMMY@
++ YFLAGS = @YFLAGS@
++ abs_builddir = @abs_builddir@
++ abs_srcdir = @abs_srcdir@
++ abs_top_builddir = @abs_top_builddir@
++ abs_top_srcdir = @abs_top_srcdir@
++ ac_ct_CC = @ac_ct_CC@
++ ac_ct_CXX = @ac_ct_CXX@
++ ac_ct_F77 = @ac_ct_F77@
++ ac_cv_wireshark_have_rpm = @ac_cv_wireshark_have_rpm@
++ am__include = @am__include@
++ am__leading_dot = @am__leading_dot@
++ am__quote = @am__quote@
++ am__tar = @am__tar@
++ am__untar = @am__untar@
++ bindir = @bindir@
++ build = @build@
++ build_alias = @build_alias@
++ build_cpu = @build_cpu@
++ build_os = @build_os@
++ build_vendor = @build_vendor@
++ builddir = @builddir@
++ capinfos_bin = @capinfos_bin@
++ capinfos_man = @capinfos_man@
++ datadir = @datadir@
++ datarootdir = @datarootdir@
++ dftest_bin = @dftest_bin@
++ docdir = @docdir@
++ dumpcap_bin = @dumpcap_bin@
++ dumpcap_man = @dumpcap_man@
++ dvidir = @dvidir@
++ editcap_bin = @editcap_bin@
++ editcap_man = @editcap_man@
++ exec_prefix = @exec_prefix@
++ host = @host@
++ host_alias = @host_alias@
++ host_cpu = @host_cpu@
++ host_os = @host_os@
++ host_vendor = @host_vendor@
++ htmldir = @htmldir@
++ idl2wrs_bin = @idl2wrs_bin@
++ idl2wrs_man = @idl2wrs_man@
++ includedir = @includedir@
++ infodir = @infodir@
++ install_sh = @install_sh@
++ libdir = @libdir@
++ libexecdir = @libexecdir@
++ localedir = @localedir@
++ localstatedir = @localstatedir@
++ mandir = @mandir@
++ mergecap_bin = @mergecap_bin@
++ mergecap_man = @mergecap_man@
++ mkdir_p = @mkdir_p@
++ oldincludedir = @oldincludedir@
++ pdfdir = @pdfdir@
++ plugindir = @plugindir@
++ prefix = @prefix@
++ program_transform_name = @program_transform_name@
++ psdir = @psdir@
++ randpkt_bin = @randpkt_bin@
++ rawshark_bin = @rawshark_bin@
++ rawshark_man = @rawshark_man@
++ rdps_bin = @rdps_bin@
++ sbindir = @sbindir@
++ sharedstatedir = @sharedstatedir@
++ srcdir = @srcdir@
++ sysconfdir = @sysconfdir@
++ target = @target@
++ target_alias = @target_alias@
++ target_cpu = @target_cpu@
++ target_os = @target_os@
++ target_vendor = @target_vendor@
++ text2pcap_bin = @text2pcap_bin@
++ text2pcap_man = @text2pcap_man@
++ top_builddir = @top_builddir@
++ top_srcdir = @top_srcdir@
++ tshark_bin = @tshark_bin@
++ tshark_man = @tshark_man@
++ wireshark_SUBDIRS = @wireshark_SUBDIRS@
++ wireshark_bin = @wireshark_bin@
++ wireshark_man = @wireshark_man@
++ wiresharkfilter_man = @wiresharkfilter_man@
++ INCLUDES = -I$(top_srcdir) -I$(includedir)
++ 
++ # the name of the plugin
++ PLUGIN_NAME = linxdisc
++ 
++ # the dissector sources (without any helpers)
++ DISSECTOR_SRC = \
++ 	packet-linxdisc.c
++ 
++ 
++ # corresponding headers
++ DISSECTOR_INCLUDES = 
++ 
++ # Dissector helpers. They're included in the source files in this
++ # directory, but they're not dissectors themselves, i.e. they're not
++ # used to generate "plugin.c".
++ DISSECTOR_SUPPORT_SRC = 
++ @HAVE_WARNINGS_AS_ERRORS_TRUE@AM_CFLAGS = -Werror
++ plugin_LTLIBRARIES = linxdisc.la
++ linxdisc_la_SOURCES = \
++ 	plugin.c \
++ 	moduleinfo.h \
++ 	$(DISSECTOR_SRC) \
++ 	$(DISSECTOR_SUPPORT_SRC) \
++ 	$(DISSECTOR_INCLUDES)
++ 
++ linxdisc_la_LDFLAGS = -module -avoid-version
++ linxdisc_la_LIBADD = @PLUGIN_LIBS@
++ 
++ #
++ # Currently plugin.c can be included in the distribution because
++ # we always build all protocol dissectors. We used to have to check
++ # whether or not to build the snmp dissector. If we again need to
++ # variably build something, making plugin.c non-portable, uncomment
++ # the dist-hook line below.
++ #
++ # Oh, yuk.  We don't want to include "plugin.c" in the distribution, as
++ # its contents depend on the configuration, and therefore we want it
++ # to be built when the first "make" is done; however, Automake insists
++ # on putting *all* source into the distribution.
++ #
++ # We work around this by having a "dist-hook" rule that deletes
++ # "plugin.c", so that "dist" won't pick it up.
++ #
++ #dist-hook:
++ #	@rm -f $(distdir)/plugin.c
++ CLEANFILES = \
++ 	linxdisc \
++ 	*~
++ 
++ MAINTAINERCLEANFILES = \
++ 	Makefile.in	\
++ 	plugin.c
++ 
++ EXTRA_DIST = \
++ 	Makefile.common		\
++ 	Makefile.nmake		\
++ 	moduleinfo.nmake	\
++ 	plugin.rc.in
++ 
++ all: all-am
++ 
++ .SUFFIXES:
++ .SUFFIXES: .c .lo .o .obj
++ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/Makefile.common $(am__configure_deps)
++ 	@for dep in $?; do \
++ 	  case '$(am__configure_deps)' in \
++ 	    *$$dep*) \
++ 	      cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh \
++ 		&& exit 0; \
++ 	      exit 1;; \
++ 	  esac; \
++ 	done; \
++ 	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  plugins/linxdisc/Makefile'; \
++ 	cd $(top_srcdir) && \
++ 	  $(AUTOMAKE) --gnu  plugins/linxdisc/Makefile
++ .PRECIOUS: Makefile
++ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
++ 	@case '$?' in \
++ 	  *config.status*) \
++ 	    cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh;; \
++ 	  *) \
++ 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)'; \
++ 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe);; \
++ 	esac;
++ 
++ $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
++ 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
++ 
++ $(top_srcdir)/configure:  $(am__configure_deps)
++ 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
++ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
++ 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
++ install-pluginLTLIBRARIES: $(plugin_LTLIBRARIES)
++ 	@$(NORMAL_INSTALL)
++ 	test -z "$(plugindir)" || $(MKDIR_P) "$(DESTDIR)$(plugindir)"
++ 	@list='$(plugin_LTLIBRARIES)'; for p in $$list; do \
++ 	  if test -f $$p; then \
++ 	    f=$(am__strip_dir) \
++ 	    echo " $(LIBTOOL) --mode=install $(pluginLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) '$$p' '$(DESTDIR)$(plugindir)/$$f'"; \
++ 	    $(LIBTOOL) --mode=install $(pluginLTLIBRARIES_INSTALL) $(INSTALL_STRIP_FLAG) "$$p" "$(DESTDIR)$(plugindir)/$$f"; \
++ 	  else :; fi; \
++ 	done
++ 
++ uninstall-pluginLTLIBRARIES:
++ 	@$(NORMAL_UNINSTALL)
++ 	@list='$(plugin_LTLIBRARIES)'; for p in $$list; do \
++ 	  p=$(am__strip_dir) \
++ 	  echo " $(LIBTOOL) --mode=uninstall rm -f '$(DESTDIR)$(plugindir)/$$p'"; \
++ 	  $(LIBTOOL) --mode=uninstall rm -f "$(DESTDIR)$(plugindir)/$$p"; \
++ 	done
++ 
++ clean-pluginLTLIBRARIES:
++ 	-test -z "$(plugin_LTLIBRARIES)" || rm -f $(plugin_LTLIBRARIES)
++ 	@list='$(plugin_LTLIBRARIES)'; for p in $$list; do \
++ 	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
++ 	  test "$$dir" != "$$p" || dir=.; \
++ 	  echo "rm -f \"$${dir}/so_locations\""; \
++ 	  rm -f "$${dir}/so_locations"; \
++ 	done
++ linxdisc.la: $(linxdisc_la_OBJECTS) $(linxdisc_la_DEPENDENCIES) 
++ 	$(linxdisc_la_LINK) -rpath $(plugindir) $(linxdisc_la_OBJECTS) $(linxdisc_la_LIBADD) $(LIBS)
++ 
++ mostlyclean-compile:
++ 	-rm -f *.$(OBJEXT)
++ 
++ distclean-compile:
++ 	-rm -f *.tab.c
++ 
++ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packet-linxdisc.Plo@am__quote@
++ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
++ 
++ .c.o:
++ @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
++ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++ @am__fastdepCC_FALSE@	$(COMPILE) -c $<
++ 
++ .c.obj:
++ @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
++ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++ @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
++ 
++ .c.lo:
++ @am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
++ @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
++ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
++ @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
++ 
++ mostlyclean-libtool:
++ 	-rm -f *.lo
++ 
++ clean-libtool:
++ 	-rm -rf .libs _libs
++ 
++ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
++ 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
++ 	unique=`for i in $$list; do \
++ 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
++ 	  done | \
++ 	  $(AWK) '    { files[$$0] = 1; } \
++ 	       END { for (i in files) print i; }'`; \
++ 	mkid -fID $$unique
++ tags: TAGS
++ 
++ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
++ 		$(TAGS_FILES) $(LISP)
++ 	tags=; \
++ 	here=`pwd`; \
++ 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
++ 	unique=`for i in $$list; do \
++ 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
++ 	  done | \
++ 	  $(AWK) '    { files[$$0] = 1; } \
++ 	       END { for (i in files) print i; }'`; \
++ 	if test -z "$(ETAGS_ARGS)$$tags$$unique"; then :; else \
++ 	  test -n "$$unique" || unique=$$empty_fix; \
++ 	  $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
++ 	    $$tags $$unique; \
++ 	fi
++ ctags: CTAGS
++ CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
++ 		$(TAGS_FILES) $(LISP)
++ 	tags=; \
++ 	here=`pwd`; \
++ 	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
++ 	unique=`for i in $$list; do \
++ 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
++ 	  done | \
++ 	  $(AWK) '    { files[$$0] = 1; } \
++ 	       END { for (i in files) print i; }'`; \
++ 	test -z "$(CTAGS_ARGS)$$tags$$unique" \
++ 	  || $(CTAGS) $(CTAGSFLAGS) $(AM_CTAGSFLAGS) $(CTAGS_ARGS) \
++ 	     $$tags $$unique
++ 
++ GTAGS:
++ 	here=`$(am__cd) $(top_builddir) && pwd` \
++ 	  && cd $(top_srcdir) \
++ 	  && gtags -i $(GTAGS_ARGS) $$here
++ 
++ distclean-tags:
++ 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
++ 
++ distdir: $(DISTFILES)
++ 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
++ 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
++ 	list='$(DISTFILES)'; \
++ 	  dist_files=`for file in $$list; do echo $$file; done | \
++ 	  sed -e "s|^$$srcdirstrip/||;t" \
++ 	      -e "s|^$$topsrcdirstrip/|$(top_builddir)/|;t"`; \
++ 	case $$dist_files in \
++ 	  */*) $(MKDIR_P) `echo "$$dist_files" | \
++ 			   sed '/\//!d;s|^|$(distdir)/|;s,/[^/]*$$,,' | \
++ 			   sort -u` ;; \
++ 	esac; \
++ 	for file in $$dist_files; do \
++ 	  if test -f $$file || test -d $$file; then d=.; else d=$(srcdir); fi; \
++ 	  if test -d $$d/$$file; then \
++ 	    dir=`echo "/$$file" | sed -e 's,/[^/]*$$,,'`; \
++ 	    if test -d $(srcdir)/$$file && test $$d != $(srcdir); then \
++ 	      cp -pR $(srcdir)/$$file $(distdir)$$dir || exit 1; \
++ 	    fi; \
++ 	    cp -pR $$d/$$file $(distdir)$$dir || exit 1; \
++ 	  else \
++ 	    test -f $(distdir)/$$file \
++ 	    || cp -p $$d/$$file $(distdir)/$$file \
++ 	    || exit 1; \
++ 	  fi; \
++ 	done
++ check-am: all-am
++ check: check-am
++ all-am: Makefile $(LTLIBRARIES)
++ installdirs:
++ 	for dir in "$(DESTDIR)$(plugindir)"; do \
++ 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
++ 	done
++ install: install-am
++ install-exec: install-exec-am
++ install-data: install-data-am
++ uninstall: uninstall-am
++ 
++ install-am: all-am
++ 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
++ 
++ installcheck: installcheck-am
++ install-strip:
++ 	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
++ 	  install_sh_PROGRAM="$(INSTALL_STRIP_PROGRAM)" INSTALL_STRIP_FLAG=-s \
++ 	  `test -z '$(STRIP)' || \
++ 	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
++ mostlyclean-generic:
++ 
++ clean-generic:
++ 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
++ 
++ distclean-generic:
++ 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
++ 
++ maintainer-clean-generic:
++ 	@echo "This command is intended for maintainers to use"
++ 	@echo "it deletes files that may require special tools to rebuild."
++ 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
++ clean: clean-am
++ 
++ clean-am: clean-generic clean-libtool clean-pluginLTLIBRARIES \
++ 	mostlyclean-am
++ 
++ distclean: distclean-am
++ 	-rm -rf ./$(DEPDIR)
++ 	-rm -f Makefile
++ distclean-am: clean-am distclean-compile distclean-generic \
++ 	distclean-tags
++ 
++ dvi: dvi-am
++ 
++ dvi-am:
++ 
++ html: html-am
++ 
++ info: info-am
++ 
++ info-am:
++ 
++ install-data-am: install-pluginLTLIBRARIES
++ 
++ install-dvi: install-dvi-am
++ 
++ install-exec-am:
++ 
++ install-html: install-html-am
++ 
++ install-info: install-info-am
++ 
++ install-man:
++ 
++ install-pdf: install-pdf-am
++ 
++ install-ps: install-ps-am
++ 
++ installcheck-am:
++ 
++ maintainer-clean: maintainer-clean-am
++ 	-rm -rf ./$(DEPDIR)
++ 	-rm -f Makefile
++ maintainer-clean-am: distclean-am maintainer-clean-generic
++ 
++ mostlyclean: mostlyclean-am
++ 
++ mostlyclean-am: mostlyclean-compile mostlyclean-generic \
++ 	mostlyclean-libtool
++ 
++ pdf: pdf-am
++ 
++ pdf-am:
++ 
++ ps: ps-am
++ 
++ ps-am:
++ 
++ uninstall-am: uninstall-pluginLTLIBRARIES
++ 
++ .MAKE: install-am install-strip
++ 
++ .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
++ 	clean-libtool clean-pluginLTLIBRARIES ctags distclean \
++ 	distclean-compile distclean-generic distclean-libtool \
++ 	distclean-tags distdir dvi dvi-am html html-am info info-am \
++ 	install install-am install-data install-data-am install-dvi \
++ 	install-dvi-am install-exec install-exec-am install-html \
++ 	install-html-am install-info install-info-am install-man \
++ 	install-pdf install-pdf-am install-pluginLTLIBRARIES \
++ 	install-ps install-ps-am install-strip installcheck \
++ 	installcheck-am installdirs maintainer-clean \
++ 	maintainer-clean-generic mostlyclean mostlyclean-compile \
++ 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
++ 	tags uninstall uninstall-am uninstall-pluginLTLIBRARIES
++ 
++ 
++ #
++ # Build plugin.c, which contains the plugin version[] string, a
++ # function plugin_register() that calls the register routines for all
++ # protocols, and a function plugin_reg_handoff() that calls the handoff
++ # registration routines for all protocols.
++ #
++ # We do this by scanning sources.  If that turns out to be too slow,
++ # maybe we could just require every .o file to have an register routine
++ # of a given name (packet-aarp.o -> proto_register_aarp, etc.).
++ #
++ # Formatting conventions:  The name of the proto_register_* routines an
++ # proto_reg_handoff_* routines must start in column zero, or must be
++ # preceded only by "void " starting in column zero, and must not be
++ # inside #if.
++ #
++ # DISSECTOR_SRC is assumed to have all the files that need to be scanned.
++ #
++ # For some unknown reason, having a big "for" loop in the Makefile
++ # to scan all the files doesn't work with some "make"s; they seem to
++ # pass only the first few names in the list to the shell, for some
++ # reason.
++ #
++ # Therefore, we have a script to generate the plugin.c file.
++ # The shell script runs slowly, as multiple greps and seds are run
++ # for each input file; this is especially slow on Windows.  Therefore,
++ # if Python is present (as indicated by PYTHON being defined), we run
++ # a faster Python script to do that work instead.
++ #
++ # The first argument is the directory in which the source files live.
++ # The second argument is "plugin", to indicate that we should build
++ # a plugin.c file for a plugin.
++ # All subsequent arguments are the files to scan.
++ #
++ plugin.c: $(DISSECTOR_SRC) $(top_srcdir)/tools/make-dissector-reg \
++     $(top_srcdir)/tools/make-dissector-reg.py
++ 	@if test -n "$(PYTHON)"; then \
++ 		echo Making plugin.c with python ; \
++ 		$(PYTHON) $(top_srcdir)/tools/make-dissector-reg.py $(srcdir) \
++ 		    plugin $(DISSECTOR_SRC) ; \
++ 	else \
++ 		echo Making plugin.c with shell script ; \
++ 		$(top_srcdir)/tools/make-dissector-reg $(srcdir) \
++ 		    $(plugin_src) plugin $(DISSECTOR_SRC) ; \
++ 	fi
++ # Tell versions [3.59,3.63) of GNU make to not export all variables.
++ # Otherwise a system limit (for SysV at least) may be exceeded.
++ .NOEXPORT:
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/Makefile.nmake new/wireshark-1.0.6/plugins/linxdisc/Makefile.nmake
+*** old/wireshark-1.0.6/plugins/linxdisc/Makefile.nmake	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/Makefile.nmake	2009-03-23 14:01:46.237000000 +0100
+***************
+*** 0 ****
+--- 1,99 ----
++ # Makefile.nmake
++ # nmake file for Wireshark plugin
++ #
++ # $Id: Makefile.nmake 22696 2007-08-27 22:56:27Z wmeier $
++ #
++ 
++ include ..\..\config.nmake
++ include moduleinfo.nmake
++ 
++ include Makefile.common
++ 
++ CFLAGS=/WX /DHAVE_CONFIG_H /I../.. /I../../wiretap $(GLIB_CFLAGS) \
++ 	/I$(PCAP_DIR)\include -D_U_="" $(LOCAL_CFLAGS)
++ 
++ .c.obj::
++ 	$(CC) $(CFLAGS) -Fd.\ -c $<
++ 	
++ LDFLAGS = $(PLUGIN_LDFLAGS)
++ 
++ !IFDEF ENABLE_LIBWIRESHARK
++ LINK_PLUGIN_WITH=..\..\epan\libwireshark.lib
++ CFLAGS=/DHAVE_WIN32_LIBWIRESHARK_LIB /D_NEED_VAR_IMPORT_ $(CFLAGS)
++ 
++ DISSECTOR_OBJECTS = $(DISSECTOR_SRC:.c=.obj)
++ 
++ DISSECTOR_SUPPORT_OBJECTS = $(DISSECTOR_SUPPORT_SRC:.c=.obj)
++ 
++ OBJECTS = $(DISSECTOR_OBJECTS) $(DISSECTOR_SUPPORT_OBJECTS) plugin.obj
++ 
++ RESOURCE=$(PLUGIN_NAME).res
++ 
++ all: $(PLUGIN_NAME).dll
++ 
++ $(PLUGIN_NAME).rc : moduleinfo.nmake
++ 	sed -e s/@PLUGIN_NAME@/$(PLUGIN_NAME)/ \
++ 	-e s/@RC_MODULE_VERSION@/$(RC_MODULE_VERSION)/ \
++ 	-e s/@RC_VERSION@/$(RC_VERSION)/ \
++ 	-e s/@MODULE_VERSION@/$(MODULE_VERSION)/ \
++ 	-e s/@PACKAGE@/$(PACKAGE)/ \
++ 	-e s/@VERSION@/$(VERSION)/ \
++ 	-e s/@MSVC_VARIANT@/$(MSVC_VARIANT)/ \
++ 	< plugin.rc.in > $@
++ 
++ $(PLUGIN_NAME).dll $(PLUGIN_NAME).exp $(PLUGIN_NAME).lib : $(OBJECTS) $(LINK_PLUGIN_WITH) $(RESOURCE)
++ 	link -dll /out:$(PLUGIN_NAME).dll $(LDFLAGS) $(OBJECTS) $(LINK_PLUGIN_WITH) \
++ 	$(GLIB_LIBS) $(RESOURCE)
++ 
++ #
++ # Build plugin.c, which contains the plugin version[] string, a
++ # function plugin_register() that calls the register routines for all
++ # protocols, and a function plugin_reg_handoff() that calls the handoff
++ # registration routines for all protocols.
++ #
++ # We do this by scanning sources.  If that turns out to be too slow,
++ # maybe we could just require every .o file to have an register routine
++ # of a given name (packet-aarp.o -> proto_register_aarp, etc.).
++ #
++ # Formatting conventions:  The name of the proto_register_* routines an
++ # proto_reg_handoff_* routines must start in column zero, or must be
++ # preceded only by "void " starting in column zero, and must not be
++ # inside #if.
++ #
++ # DISSECTOR_SRC is assumed to have all the files that need to be scanned.
++ #
++ # For some unknown reason, having a big "for" loop in the Makefile
++ # to scan all the files doesn't work with some "make"s; they seem to
++ # pass only the first few names in the list to the shell, for some
++ # reason.
++ #
++ # Therefore, we have a script to generate the plugin.c file.
++ # The shell script runs slowly, as multiple greps and seds are run
++ # for each input file; this is especially slow on Windows.  Therefore,
++ # if Python is present (as indicated by PYTHON being defined), we run
++ # a faster Python script to do that work instead.
++ #
++ # The first argument is the directory in which the source files live.
++ # The second argument is "plugin", to indicate that we should build
++ # a plugin.c file for a plugin.
++ # All subsequent arguments are the files to scan.
++ #
++ plugin.c: $(DISSECTOR_SRC) ../../tools/make-dissector-reg.py ../../tools/make-dissector-reg
++ !IFDEF PYTHON
++ 	@echo Making plugin.c (using python)
++ 	@$(PYTHON) "../../tools/make-dissector-reg.py" . plugin $(DISSECTOR_SRC)
++ !ELSE
++ 	@echo Making plugin.c (using sh)
++ 	@$(SH) ../../tools/make-dissector-reg . plugin $(DISSECTOR_SRC)
++ !ENDIF
++ 
++ !ENDIF
++ 
++ clean:
++ 	rm -f $(OBJECTS) $(RESOURCE) plugin.c *.pdb \
++ 	    $(PLUGIN_NAME).dll $(PLUGIN_NAME).dll.manifest $(PLUGIN_NAME).lib \
++ 	    $(PLUGIN_NAME).exp $(PLUGIN_NAME).rc 
++ 
++ distclean: clean
++ 
++ maintainer-clean: distclean
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/moduleinfo.h new/wireshark-1.0.6/plugins/linxdisc/moduleinfo.h
+*** old/wireshark-1.0.6/plugins/linxdisc/moduleinfo.h	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/moduleinfo.h	2009-03-23 14:01:46.284000000 +0100
+***************
+*** 0 ****
+--- 1,17 ----
++ /* Included *after* config.h, in order to re-define these macros */
++ 
++ #ifdef PACKAGE
++ #undef PACKAGE
++ #endif
++ 
++ /* Name of package */
++ #define PACKAGE "linxdisc"
++ 
++ 
++ #ifdef VERSION
++ #undef VERSION
++ #endif
++ 
++ /* Version number of package */
++ #define VERSION "0.0.1"
++ 
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/moduleinfo.nmake new/wireshark-1.0.6/plugins/linxdisc/moduleinfo.nmake
+*** old/wireshark-1.0.6/plugins/linxdisc/moduleinfo.nmake	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/moduleinfo.nmake	2009-03-23 14:01:46.297000000 +0100
+***************
+*** 0 ****
+--- 1,28 ----
++ #
++ # $Id: moduleinfo.nmake 20155 2006-12-19 22:22:34Z jake $
++ #
++ 
++ # The name
++ PACKAGE=linxdisc
++ 
++ # The version
++ MODULE_VERSION_MAJOR=0
++ MODULE_VERSION_MINOR=0
++ MODULE_VERSION_MICRO=1
++ MODULE_VERSION_EXTRA=0
++ 
++ #
++ # The RC_VERSION should be comma-separated, not dot-separated, 
++ # as per Graham Bloice's message in
++ #
++ #	http://www.ethereal.com/lists/ethereal-dev/200303/msg00283.html
++ #
++ # "The RC_VERSION variable in config.nmake should be comma separated. 
++ # This allows the resources to be built correctly and the version
++ # number to be correctly displayed in the explorer properties dialog
++ # for the executables, and XP's tooltip, rather than 0.0.0.0."
++ #
++ 
++ MODULE_VERSION=$(MODULE_VERSION_MAJOR).$(MODULE_VERSION_MINOR).$(MODULE_VERSION_MICRO).$(MODULE_VERSION_EXTRA)
++ RC_MODULE_VERSION=$(MODULE_VERSION_MAJOR),$(MODULE_VERSION_MINOR),$(MODULE_VERSION_MICRO),$(MODULE_VERSION_EXTRA)
++ 
+diff -crBN old/wireshark-1.0.6/plugins/linxdisc/packet-linxdisc.c new/wireshark-1.0.6/plugins/linxdisc/packet-linxdisc.c
+*** old/wireshark-1.0.6/plugins/linxdisc/packet-linxdisc.c	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/plugins/linxdisc/packet-linxdisc.c	2009-03-23 14:01:46.323000000 +0100
+***************
+*** 0 ****
+--- 1,307 ----
++ /* packet-linxdisc.c
++  * Routines for LINX packet dissection
++  *
++  * Copyright 2008, Enea Software AB <linx@enea.com>
++  *
++  * Wireshark - Network traffic analyzer
++  * By Gerald Combs <gerald@wireshark.org>
++  * Copyright 1998 Gerald Combs
++  *
++  * This program is free software; you can redistribute it and/or
++  * modify it under the terms of the GNU General Public License
++  * as published by the Free Software Foundation; either version 2
++  * of the License, or (at your option) any later version.
++  *
++  * This program is distributed in the hope that it will be useful,
++  * but WITHOUT ANY WARRANTY; without even the implied warranty of
++  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  * GNU General Public License for more details.
++  *
++  * You should have received a copy of the GNU General Public License
++  * along with this program; if not, write to the Free Software
++  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++  */
++ 
++ /* ENEA LINX Discovery Protocol Specification available at
++  * http://linx.sourceforge.net
++  */
++ 
++ #ifdef HAVE_CONFIG_H
++ # include "config.h"
++ #endif
++ 
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <ctype.h>
++ #include <time.h>
++ #include <string.h>
++ #include <glib.h>
++ 
++ #include <epan/packet.h>
++ #include <epan/prefs.h>
++ #include <epan/emem.h>
++ 
++ /* forward references */
++ void proto_register_linxdisc();
++ void proto_reg_handoff_linxdisc();
++ void dissect_linxdisc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree);
++ 
++ static int proto_linxdisc = -1;
++ static int global_linxdisc_port = 0x999a;
++ static dissector_handle_t linxdisc_handle;
++ 
++ static int hf_linxdisc_version = -1;
++ static int hf_linxdisc_type = -1;
++ static int hf_linxdisc_up_sec = -1;
++ static int hf_linxdisc_up_usec = -1;
++ static int hf_linxdisc_reserved = -1;
++ static int hf_adv_nlen = -1;
++ static int hf_adv_clen = -1;
++ static int hf_adv_node = -1;
++ static int hf_adv_cluster = -1;
++ static int hf_res_pref = -1;
++ 
++ 
++ #define LINXDISC_SOL 1
++ #define LINXDISC_ADV 2
++ #define LINXDISC_RES 3
++ 
++ static const value_string packet_type_names[] = {
++ 	{ LINXDISC_SOL, "Solicitation" }, /* not used */
++ 	{ LINXDISC_ADV, "Advertisement" },
++ 	{ LINXDISC_RES, "Collision resolution" },
++ 	{ 0, NULL }
++ };
++ 
++ 
++ #define LINXDISC_RELEASE 0
++ #define LINXDISC_KEEP    1
++ 
++ static const value_string res_pref[] = {
++ 	{ LINXDISC_RELEASE, "Releasing name" },
++ 	{ LINXDISC_KEEP,    "Keeping name" },
++ };
++ 
++ static hf_register_info hf[] = {
++ 	{ &hf_linxdisc_version,
++ 	  { "version", "linxdisc.version",
++ 	    FT_UINT16, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_linxdisc_type,
++ 	  { "type", "linxdisc.type",
++ 	    FT_UINT16, BASE_DEC,
++ 	    packet_type_names, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_linxdisc_up_sec,
++ 	  { "uptime seconds", "linxdisc.up_sec",
++ 	    FT_UINT32, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_linxdisc_up_usec,
++ 	  { "Uptime microseconds", "linxdisc.up_usec",
++ 	    FT_UINT32, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_linxdisc_reserved,
++ 	  { "reserved", "linxdisc.reserved",
++ 	    FT_UINT16, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_adv_nlen,
++ 	  { "Node length", "linxdisc.adv.nlen",
++ 	    FT_UINT32, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL}
++ 	},
++ 	{ &hf_adv_clen,
++ 	  { "Cluster length", "linxdisc.adv.clen",
++ 	    FT_UINT32, BASE_DEC,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_adv_node,
++ 	  { "Node name", "linxdisc.adv.node",
++ 	    FT_STRING, BASE_HEX,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_adv_cluster,
++ 	  { "Cluster name", "linxdisc.adv.cluster",
++ 	    FT_STRING, BASE_HEX,
++ 	    NULL, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ 	{ &hf_res_pref,
++ 	  { "Preference", "linxdisc.res.pref",
++ 	    FT_UINT32, BASE_DEC,
++ 	    res_pref, 0x0,
++ 	    NULL, HFILL }
++ 	},
++ };
++ 
++ 
++ static gint ett_linxdisc = -1;
++ static gint *ett[] = {
++ 	&ett_linxdisc
++ };
++ 
++ void
++ proto_register_linxdisc(void)
++ {
++ 	if (proto_linxdisc == -1) {
++ 		proto_linxdisc = proto_register_protocol(
++ 			"LINX Discovery Protocol",
++ 			"LINXDISC",
++ 			"linxdisc"
++ 			);
++ 		proto_register_field_array(proto_linxdisc,
++ 					   hf,
++ 					   array_length(hf));
++ 		proto_register_subtree_array(ett, array_length(ett));
++ 	}
++ }
++ 
++ void
++ proto_reg_handoff_linxdisc(void)
++ {
++ 	static gboolean initialized = FALSE;
++ 
++ 	if (!initialized) {
++ 		linxdisc_handle = create_dissector_handle(dissect_linxdisc,
++ 							  proto_linxdisc);
++ 		dissector_add("ethertype",
++ 			      global_linxdisc_port,
++ 			      linxdisc_handle);
++ 	}
++ }
++ 
++ void
++ adv(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint32 *offset)
++ {
++ 	if (tree) {
++ 		guint32 nlen = tvb_get_ntohl(tvb, *offset);
++ 		guint32 clen = tvb_get_ntohl(tvb, *offset + 4);
++ 		proto_tree_add_item(tree,
++ 				    hf_adv_nlen,
++ 				    tvb, *offset, 4, FALSE);
++ 		*offset += 4;
++ 		proto_tree_add_item(tree,
++ 				    hf_adv_clen,
++ 				    tvb, *offset, 4, FALSE);
++ 		*offset += 4;
++ 		proto_tree_add_item(tree,
++ 				    hf_adv_node,
++ 				    tvb, *offset, nlen + 1, FALSE);
++ 		if (check_col(pinfo->cinfo, COL_INFO)) {
++ 			guint8 *node;
++ 			node = tvb_get_string(tvb, *offset, nlen);
++ 			col_append_fstr(pinfo->cinfo, COL_INFO, ", %s", node);
++ 			g_free(node);
++ 		}
++ 		*offset += (nlen + 1);
++ 		proto_tree_add_item(tree,
++ 				    hf_adv_cluster,
++ 				    tvb, *offset, clen + 1, FALSE);
++ 		if (check_col(pinfo->cinfo, COL_INFO)) {
++ 			guint8 *clust;
++ 			clust = tvb_get_string(tvb, *offset, clen);
++ 			col_append_fstr(pinfo->cinfo, COL_INFO, "@%s", clust);
++ 			g_free(clust);
++ 		}
++ 		*offset += (clen + 1);
++ 	}
++ }
++ 
++ void
++ res(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint32 *offset)
++ {
++ 	if (tree) {
++ 		proto_tree_add_item(tree,
++ 				    hf_res_pref,
++ 				    tvb, *offset, 4, FALSE);
++ 		if (check_col(pinfo->cinfo, COL_INFO)) {
++ 			guint32 pref = tvb_get_ntohl(tvb, *offset);
++ 			switch (pref) {
++ 			case LINXDISC_RELEASE:
++ 				col_append_str(pinfo->cinfo, COL_INFO,
++ 					       ", Releasing name");
++ 				break;
++ 			case LINXDISC_KEEP:
++ 				col_append_str(pinfo->cinfo, COL_INFO,
++ 					       ", Keeping name");
++ 				break;
++ 			default:
++ 				col_append_str(pinfo->cinfo, COL_INFO,
++ 					       ", Unknown resolution");
++ 			}
++ 		}
++ 		*offset += 4;
++ 	}
++ }
++ 
++ void
++ dissect_linxdisc(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
++ {
++ 	guint16 packet_type = tvb_get_ntohs(tvb, 2);
++ 
++ 	if (check_col(pinfo->cinfo, COL_PROTOCOL)) {
++ 		col_set_str(pinfo->cinfo, COL_PROTOCOL, "LINXDISC");
++ 	}
++ 	/* Clear out stuff in the info column */
++ 	if (check_col(pinfo->cinfo, COL_INFO)) {
++ 		col_clear(pinfo->cinfo, COL_INFO);
++ 		col_add_fstr(pinfo->cinfo, COL_INFO, "%s",
++ 			     val_to_str(packet_type, packet_type_names,
++ 					"Unknown (0x%02x)"));
++ 	}
++ 
++ 	if (tree) {
++ 		proto_item *ti = NULL;
++ 		proto_tree *linxdisc_tree = NULL;
++ 		guint offset = 0;
++ 
++ 		ti = proto_tree_add_item(tree, proto_linxdisc,
++ 					 tvb, 0, -1, FALSE);
++ 		proto_item_append_text(ti, ", Type %s",
++ 				       val_to_str(packet_type,
++ 						  packet_type_names,
++ 						  "Unknown (0x%02x)"));
++ 		linxdisc_tree = proto_item_add_subtree(ti, ett_linxdisc);
++ 		proto_tree_add_item(linxdisc_tree,
++ 				    hf_linxdisc_version,
++ 				    tvb, 0, 2, FALSE);
++ 		offset += 2;
++ 		proto_tree_add_item(linxdisc_tree,
++ 				    hf_linxdisc_type,
++ 				    tvb, offset, 2, FALSE);
++ 		offset += 2;
++ 		proto_tree_add_item(linxdisc_tree,
++ 				    hf_linxdisc_reserved,
++ 				    tvb, offset, 2, FALSE);
++ 		offset += 2;
++ 		proto_tree_add_item(linxdisc_tree,
++ 				    hf_linxdisc_up_sec,
++ 				    tvb, offset, 4, FALSE);
++ 		offset += 4;
++ 		proto_tree_add_item(linxdisc_tree,
++ 				    hf_linxdisc_up_usec,
++ 				    tvb, offset, 4, FALSE);
++ 		offset += 4;
++ 		switch (packet_type) {
++ 		case LINXDISC_ADV: /* Advertisement */
++ 			adv(tvb, pinfo, linxdisc_tree, &offset);
++ 			break;
++ 		case LINXDISC_RES:
++ 			res(tvb, pinfo, linxdisc_tree, &offset);
++ 			break;
++ 		default:
++ 			break;
++ 		}
++ 	}
++ }
+diff -crBN old/wireshark-1.0.6/plugins/Makefile.am new/wireshark-1.0.6/plugins/Makefile.am
+*** old/wireshark-1.0.6/plugins/Makefile.am	2009-03-23 13:48:57.247000000 +0100
+--- new/wireshark-1.0.6/plugins/Makefile.am	2009-03-23 14:02:50.970000000 +0100
+***************
+*** 33,38 ****
+--- 33,39 ----
+  	gryphon \
+  	infiniband \
+  	irda \
++ 	linxdisc \
+  	lwres \
+  	m2m \
+  	mate \
+diff -crBN old/wireshark-1.0.6/plugins/Makefile.in new/wireshark-1.0.6/plugins/Makefile.in
+*** old/wireshark-1.0.6/plugins/Makefile.in	2009-03-23 13:48:57.279000000 +0100
+--- new/wireshark-1.0.6/plugins/Makefile.in	2009-03-23 14:03:26.263000000 +0100
+***************
+*** 335,340 ****
+--- 335,341 ----
+  	gryphon \
+  	infiniband \
+  	irda \
++ 	linxdisc \
+  	lwres \
+  	m2m \
+  	mate \
+diff -crBN old/wireshark-1.0.6/plugins/Makefile.nmake new/wireshark-1.0.6/plugins/Makefile.nmake
+*** old/wireshark-1.0.6/plugins/Makefile.nmake	2009-03-23 13:48:57.323000000 +0100
+--- new/wireshark-1.0.6/plugins/Makefile.nmake	2009-03-23 14:04:20.079000000 +0100
+***************
+*** 62,67 ****
+--- 62,70 ----
+  	cd irda
+  	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+  	cd ..
++ 	cd linxdisc
++         $(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
++         cd ..
+  	cd lwres
+  	$(MAKE) /$(MAKEFLAGS) -f Makefile.nmake $(PLUGIN_TARGET)
+  	cd ..
+***************
+*** 132,137 ****
+--- 135,141 ----
+  	xcopy gryphon\*.dll $(VERSION) /d
+  	xcopy infiniband\*.dll $(VERSION) /d
+  	xcopy irda\*.dll $(VERSION) /d
++ 	xcopy linxdisc\*.dll $(VERSION) /d
+  	xcopy lwres\*.dll $(VERSION) /d
+  	xcopy m2m\*.dll $(VERSION) /d
+  	xcopy mate\*.dll $(VERSION) /d

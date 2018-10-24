@@ -1,0 +1,170 @@
+CMCL
+
+               LINX Connection Manager Control Layer (CMCL) 1.0
+
+
+Introduction
+============
+
+The CMCL consists of one file:
+
+* cmcl.c,	  this file implements the CMCL, the statemachine,
+		  creating and destroying connection, delivery and transmission
+		  of user data.
+
+
+The purpose of the CMCL is to provide peer supervision, the CMCL does
+not handle fragmentation and is not a reliability layer. Fragmentation
+and loss-less in-order delivery of messages is left to the underlying driver
+or connection manager.
+
+Control signaling between the two instances of the CMCL (one instance on each
+peer of the connection) is recognized by using the src and dst parameters in
+the rlnh protocol. src is always set to zero, and the dst parameter is used to
+identify the control signal.
+
+The interface between the RLNH and CMCL is defined by linx_conn.h and
+the same interface is also used between the CMCL and the underlying
+driver/connection manager, i.e. the CMCL is stackable.
+
+The Layer below CMCL must abide to all the rules that are stated in the
+linx_conn.h interface.
+
+
+                             +--------------------+
+                             |                    |
+		             |        RLNH        |
+		             |                    |
+		             +--------------------+
+                                 |            ^
+		            linx_conn/dc      |
+                                 |      linx_conn/uc
+		                 v            |
+                             +--------------------+
+		             |        CMCL        |
+		             +--------------------+
+                                 |            ^
+		            linx_conn/dc      |
+		                 |      linx_conn/uc
+		                 v            |
+		             +--------------------+
+		             |                    |
+		             |     Driver/CM      |
+		             |                    |
+		             +--------------------+
+
+			      Fig.1 Stackable CMCL
+			      
+CMCL implements the CM rules defined in linx_conn.h but this is also
+required by the underlying layers. The Driver or CM underneth the
+CMCL must in turn follow the same rules in linx_conn.h when using the
+callbacks into the CMCL layer.
+
+The CMCL does not append any headers to outgoing userdata, instead it
+uses the linkaddresses fields to identify its own control messages
+sent CMCL to CMCL. Signals were the source linkaddress is zero and
+the destination linkaddress is not equal to zero are CMCL signals.
+
+The RLNH layer in turn identifies its internal messages as both
+the the source and destination linkaddresses being zero.
+
+Connection Management
+=====================
+
+The entire state machine resides in one process, thus no locking is
+needed. All downcalls from the RLNH expect the transmit downcall
+results in a signal sent to the CMCL process. Also, all upcalls made from
+the underlying layer except for the deliver upcall results in a signal
+sent to the CMCL process.
+
+The connection state machine:
+-----------------------------
+
+When a CMCL connection is created the underlying layer must provide a
+connection object and a downcall interface as defined by
+linx_conn.h.
+
+The CMCL will start in state Disconnected and will remain
+in that state until the RLNH layer calls downcall connect and CMCL
+will enter Connection_1 state where it in turn request a connection
+from the underlying layer by calling downcall connect.
+
+The CMCL will remain in state Connecting_1 until it receives an
+upcall connected from the underlying layer and then it will enter
+Connecting_2 state where the CMCL tries to establish a connection to
+its peer by sending a CON_REQ message.
+
+The CMCL will remain in state Connection_2 until it receives a
+CONN_REQ or CONN_ACK from its peer and will then enter state Connected
+and call connected upcall to the RLNH.
+
+In state Connected the CMCL will supervise the peer by sending
+keep-alive messages. If no response is received after three
+consecetive keep-alive messages the CMCL will enter state
+Disconnecting and call disconnect downcall to the underlying
+layer.
+
+When the underlying layer calls upcall disconnected the CMCL will
+enter Disconnected state and in turn call upcall disconnected to the RLNH.
+
+
+                                    create
+                                      |
+                                      v
+                               +--------------+
+     +------------------------>|              |<------------------------+
+     |                         | Disconnected |                         |
+     |	          +------------|              |<----------+             |
+     |	          |            +--------------+           |             |
+     |          dc_conn               ^                uc_disc          |
+     |            |                   |                   |             |
+     |            v                uc_disc                |             |
+     |     +--------------+           |           +---------------+     |
+     |     |              |           |           |               |     |
+     |     | Connecting_1 |-----------+   +------>| Disconnecting |-----n----+
+  uc_disc  |              |               |       |               |     |    |
+     |     +--------------+            uc_conn    +---------------+  uc_disc |
+     |            |                    dc_disc            ^             |    |
+     |            |                       |               |             |    |
+     |         uc_conn  +-----------------+        dc_disc, uc_conn     |    |
+     |            |     |                         conn_req, conn_rst    |    |
+     |	          |     |			       tmo_sig*         |    |
+     |            v     |                                 |             |    |
+     |     +--------------+                       +---------------+     |    |
+     |     |              |        conn_req       |               |     |    |
+     +-----| Connecting_2 |---------------------->|   Connected   |-----+    |
+           |              |        conn_ack       |               |	     |
+           +--------------+                       +---------------+	     |
+									     |
+                               +---------------+                             |
+			       |               |                             |
+			       |   Finalized   |<----------dc_fini-----------+
+			       |               |
+			       +---------------+
+				       |
+				       v
+				    destroy
+
+	                   Fig.2 The CMCL State machine
+
+
+* tmo_sig - the transission from state Connected to state Disconnected
+  is only done after a timout when three consecitive keep-alive
+  messages have been sent to the peer without any reply.
+
+
+RX and TX
+---------
+
+The transmit downcall from the RLNH layer is passed straight down to
+the underlying layer, no header is added.
+
+The deliver upcall from the underlying layer is passed to the RLNH
+layer in the same context. While connecting the deliver upcall can
+sometimes be made while the CMCL is still in Connecting_2 state, in
+this case the message is queued and delivered after the CMCL enters
+the Connected state and the next deliver upcall is made or keep-alive message
+is received.
+
+
+

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+if [ ! -e ./MANIFEST ]
+then 
+    echo "This script must be run from the Linx root directory."
+    exit 1
+fi
+CHECKVEREXIT=true; if [ "$1" = "-n" ]; then CHECKVEREXIT=false ; shift ; fi
+
+ver=2.5.1
+
+checkversion() {
+  for i in $* ; do
+    if [ ! "`egrep '^Version|^#define LINX_VERSION|^<h3>.*Version' $i | head -1 | egrep $ver`" ] ; then
+       echo "*** ERROR: Missing Version $ver in beginning of $i" ; if $CHECKVEREXIT; then exit ; fi
+    fi
+  done
+}
+checkversion ChangeLog  RELEASE_NOTES  doc/index.html  include/linux/linx_ioctl.h
+
+
+archive_name=linx-${ver}
+
+./update-makefiles.sh
+
+mkdir $archive_name || exit 2
+
+tar --files-from=./MANIFEST -cf - | (cd $archive_name; tar -xf -)
+
+if [ $? -ne 0 ]; then
+	rm -rf $archive_name
+	exit 4
+fi
+
+tar -czf ${archive_name}.tar.gz $archive_name || exit 6
+
+rm -rf $archive_name
+
+echo "Created: ${archive_name}.tar.gz"

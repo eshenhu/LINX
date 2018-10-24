@@ -1,0 +1,81 @@
+.TH LINX_GET_DESCRIPTOR 3 "2006-09-01" 1.0 "LIBLINX"
+.SH NAME
+linx_get_descriptor() - Get the socket descriptor associated with a
+LINX endpoint
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_get_descriptor(LINX *" linx ");"
+.SH DESCRIPTION
+The
+.BR linx_get_descriptor "()"
+call returns the socket descriptor associated with a LINX endpoint.
+This socket descriptor is usually not needed when using the LINX API.
+.br
+
+The LINX socket descriptor must be used if the application wants to
+use the generic
+.BR select (2)
+or
+.BR poll (2)
+calls.
+The application can then use LINX API function calls with the corresponding
+LINX endpoint handle to take care of events reported for a LINX socket descriptor.
+Alternatively, the LINX socket interface can be used.
+.br
+
+.I linx
+is the handle of the LINX endpoint for which the socket descriptor is retrieved.
+
+.SH "RETURN VALUE"
+Returns a socket descriptor.
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH "NOTES"
+A LINX socket descriptor retrieved by
+.BR linx_get_descriptor (3)
+must NOT be closed by calling
+.BR close (2).
+Close the LINX endpoint instead using
+.BR linx_close "(3)".
+
+
+.SH SEE ALSO
+.BR linx "(7), " linx_close "(3)," linx_open "(3), " select "(2), " poll "(2)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

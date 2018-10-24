@@ -1,0 +1,396 @@
+Version 2.5.1 (2011-07-08)
+==========
+* The limit of number of sockets per link allowed lowered from 1024 to two.
+* Removed a check in LINX kernel module for max signal size.
+* Fixes for the multicore header in the ECM and Wireshark patch.
+		
+Version 2.5.0 (2011-04-26)
+==========
+* Fixed a bug in linxstat.
+* Updated manpage for mkethcon and help info for mkethcon and linxcfg to reflect
+  reality.
+* libcfg was updated to support cmcl connections.
+* Fixed minor bugs in rm*con binaries.
+* Fixed build errors for various kernel versions. ipv6 for <2.6.22 and db.c for
+  newer ones >2.6.36.
+* Fixed some issues in the linx Gateway related to LINXCR-1397
+* Added support for ipv6 in the tcp connection manager.
+* Improved the performance of intra-process communication with pointer passing.
+* Fixed some issues found by coverity.
+* Removed some warnings when building linxstat.
+* Remove all BUG BUG_ON WARN_ON from linx modules to avoid using __FILE__
+  define in the errors. This define causes the linx module to be different
+  if compiled in different folder.
+* Added fixes in the ECM were a malformed received packet could lead to
+  kernel panic.
+* Fixed issue with multi-access to LINX sockets from user-space
+  applications could lead to kernel panic.
+* Added new features to linxstat: print info only for a given huntname
+  and display only a specified number of characters from huntname
+* Added coreid header
+* Added support for 2.5.35 kernels.
+* Fixed bug with negative signal filter.
+* Fixed bug with missing internal signals in the message trace.
+* Added patch file for Ethernet CM to compensate for faulty Ethernet
+  drivers that don't allocate enough headroom in skb when using VLAN.
+* Added support for 2.6.33 and 2.6.34 kernels.
+* Fixed vlan bug reproducing on certain machines
+* Fixed bug with receive_w_tmo where tmo=0 resulted in no signal above
+  4095 could be received.
+* Fixed string handling bug in linxgws.
+* Fixed memory allocation issue in linxgws.
+* Fixed a bug in linxdisc regarding several interfaces.
+* Added ip config in linxnet conf file
+* Linxstat now uses a function interface to retrieve info instead of
+ioctl.
+	
+Version 2.4.0 (2010-02-22)
+==========	
+* Added missing riocm.txt to MANIFEST
+* Added RIOCM documentation. net/linx/riocm/riocm.txt
+* Updated RELEASE_NOTES for 2.4.0 release.
+* Added support for creating links using RapidIO CM connections in linxcfg.
+
+Version 2.4.0-beta (2010-01-15)
+==========
+* Added a RapidIO connection manager.
+* Remove debug printk in device notification handler.
+
+Version 2.3.0 (2009-12-9)
+==========
+* Fixed build errors for vanilla kernel 2.6.32
+* Example conf file for Linxdisc now emphasizes that VLAN interfaces are supported.
+* RLNH control data is now always sent from kernel context.
+* Altered the keepalive mechanism for the Ethernet CM. The old implementation
+  was sensitive to packet loss. Contributed by paull7 @ sourceforge. Note: The
+  new implementation is backwards compatible.
+* Added support for 2.6.31 kernels.
+* Fix LINX_IOCTL_INFO ioctl request for gathering process' receive filters.
+* Document LINX_INFO_RECV_QUEUE_2.
+* Drop tcp connect packets that doesn't match the current protocol
+version.
+* Add hardware address size in ethernet connection header.
+* Man page for linx_request_new_link and linx_cancel_new_link was missing
+* Fixed bug where the request ack bit was not set when the sliding window queue
+  is becoming full.
+* Fixed memory leaks in the code for create and destroy connections and links.	
+* New shared memory connection manager.
+* Wireshark plugin now supports LINX TCP Connection manager.
+* Wrong RLNH protocol version was listed in documentation.	
+	
+Version 2.2.0 (2009-03-31)
+==========
+* New Linxdisc and Linx internal messages patches for Wireshark 1.0.6
+* New LINX patches for tcpdump 4.0.0 and libpcap 1.0.0
+* Trace of internal LINX messages now use official LINX ethernet type, 0x8911.
+* Added new function linx_get_owner(), return the pid of the owner of a LINX endpoint.	
+* Added missing files to MANIFEST.
+* Example files now have the correct copyright header.
+* Fixed oob-issue where the a link in some cases wasn't created.
+* Removed a state in the tcp cm state machine.
+* Did some major cleanup in tcp cm.
+* Removed a kernel function from af_linx.c
+* Fixed a bug in tcp cm regarding halt of workqueue when connecting to dead peers
+* Linux Gateway Server and Client added to distribution, also gwcmd tool to test Linx Gateway Servers. 
+* Removed bug_on's and fixed better error reporting back to user space on failed send.
+* Fix bug in linx_info_filter_32
+* Fixed alignment issue in linxstat.
+* Removed linx_create/destroy_eth/tcp_link functions.
+* Avoid calling kmalloc(0) from Linx IPC-layer.
+
+Version 2.1.0 (2008-11-10)
+==========	
+* LINX now runs on x86 2.6.27 Linux kernel.
+* Add support for mips(64).
+* Add patches to libpcap and tcpdump configure scripts for Octeon.
+* The TCP CM now support OOB messaging.
+* Fixes for running w errorchecks enabled.
+* Improved garbage collection of sockets in the tcp_cm.
+* Minor changes of linxstat output.
+* The linxstat program can now tell if a signal in the receive queue is OOB.
+* Support for allocating fragmentated skb's is now a LINX kernel module param and no longer
+  a comple-time option.
+* Fixed bug when building the LINX kernel module with memory fragmentation support on and
+  sending large unpaged signals.
+* Fixed bug in LINX message trace. If a fragmented message was received, only the first
+  fragment was traced.
+* Added optimized linx_do_sendmsg call for attach/hunt/tmo/newlink signals.
+* Pulled back warning level a bit to avoid complaints from kernel headers.
+* Fixed bug that lead to the LINX kernel module couldn't be unloaded.
+* linx_skb_copy_bits removed
+* linx_ioctl_info_*() functions moved to a seperate file.
+* Internal handling of attach/tmo/newlink signals is simplified.
+* Updated liblinx to user LINX_IOCTL_SEND and LINX_IOCTL_RECEIVE instead of sendto/recvfrom/sendmsg
+* Added LINX_IOCTL_SEND and LINX_IOCTL_RECEIVE.
+* Forwarded OOB signals are now sent OOB on the forwarding node.
+* Fixed bug where max spids per link was one less than user configured.
+* Added OOB support for the Ethernet CM.
+* Added the linx_send_w_opt() and linx_sigattr() functionality.
+* Added man-pages for linx_send_w_opt() and linx_sigattr().
+* Fixed some small issues in rlnh.c for linx_send_w_s() and linx_hunt_from().
+* Workaround added for older linux kernels missing atomic_inc_return.
+* Internal handling of features is simplified.
+* Fixed bug where a LINX socket could be closed by kernel module while user still is holding it.
+* Show "MORE bit" for frag-packets in linxdump.
+* The sigselect mask is now cleared if linx_receive_w_tmo results in a timeout.
+* A new token based interface was added for new link notifications.
+* Replace atomic_inc()/atomic_read() combination with single call to atomic_add_return().
+* Check for forward slashes in linkname is now done when creating a link, not when it's connected.
+* Hunt/attach/tmo signals are stored in skb buffers and not kernel memory.
+
+Version 2.0.1 (2008-03-28)
+==========	
+* Wireshark patches added for Linxdisc and LINX internal messages.
+* Support for Linux kernel 2.6.24
+* Removed meaningless info message about already dead processes from linxdisc.
+* Added /* *INDENT-OFF* */ ... /* *INDENT-ON* */ guards to linx.h.
+* Reserved field was missing from linxdisc protocol description.
+* Enable linxdisc to set link parameters.
+* LINX Ethernet type number changed from 0x9999 to now officially allocated typenumber 0x8911.
+* Removed prefix eth_conn_ from ecm funcs, removed interlal_ from rlnh + ipc funcs.
+* Change void * in eth_cm to struct sk_buff *, remove adaptive coalescing.
+* STATIC_INLINE -> static inline, don't wrap list use in macros, remove other pointless ETH_CONN_* macros.
+* Fixed Indentation and formatting.
+* Fix error found by Coverity, unused variable(linux.c), mem leak(linx_message_trace.c).
+* Fix possible memory overflow and loops in linxdisc.
+* Fix typos in create_{eth,tcp}_link(3) man pages.
+* Add create end destroy functions for TCP to libcfg.
+	
+Version 2.0.0 (2008-01-18)
+==========
+* Set version to 2.0.0
+* MTU is negotiated per default and re-negotiated if mtu of the interface is changed.
+* Fix possible memory leak in libcfg.
+* Fixed "free after free" in linx_ioctl_info_filters() and "use after free" in __linx_internal_free_pend_tmo().
+* Parameter order between LINX_SIGSELECT and LINX_OSTIME was exchanged for linx_receive_w_tmo() and linx_receive_from().
+* If 'make install' is issued, modules will be automatically loaded when creating links/spids.
+* Linxstat were showing wrong signo when listing receive queue.
+* New version of the User's Guide
+* Fixed some soft lockups by exchanging read/write locks to _bh ones in hunt.c.
+* Fix for memory fragmentation for when copying the signal into kernel-space.
+* In function eth_conn_destroy_conn(), let's delete timers before freeing lists etc.
+* In eth_conn_disconnect_link(), let's get the spinlock before the if-statement.
+* In __skb_unlink_compat(), let's unlink sk_receive_queue instead of sk_write_queue.
+* Fixed a recursive lock in rlnh/ipc layer.
+* Removed ipc_unlock_spid and replaced them with sock_put (race between linx_release (SOCK_DEAD) and linx_spid_to_sock).
+* Updated linxstat documentation.
+* LINX_INFO_SIGNAL_PAYLOAD no works with MEM_FRAGMENTATION_SUPPORT.
+* Removed some compiler warnings for some Linux kernel versions.
+* Fixed a problem in linx_skb_copy_bits. It is now synched with skb_copy_bits from 2.6.23.1
+* Fixed compiler warning in association with ioctl() on PPC64.
+* Removed check for attach to self. Even though it's pointless it should be allowed.
+* The tcp cm now delivers sk_buffs to the rlnh layer. This removes a lot of memcopies and improves the performance.
+* Another 2.6.23 fix, only visible if MEM_FRAGMENTATION_SUPPORT is set.
+* Add support for PPC64 and 2.6.23 kernels.
+* Update patches for latest versions of libpcap and tcpdump.
+* Added the Linx Timeout Service.
+* More information has been added to procfs for Ethernet Connection manager.
+* Linkaddresses are sent as 32 bit now by the Ethernet Connection manager instead of 16 bits.
+* Add feature negotiation stuff to linxcfg, use getopt_long.
+* Better send with sender handling when sender is a phantom.
+* TCP CM protocol version was bumped to 3 and improvements were made. NOTE: Version 1, 2 and 3 are NOT compatible.
+* Replaced deprecated SPIN_LOCK_UNLOCKED with spin_lock_init().
+* RLNH protocol adjusted, now version 2
+* Fixed some minor issues found by a customer.
+* Added some more CFG types. Fixed bug in TCPCM CFG.
+* Fixed bug when compiling with per-socket statistics and link supervision.
+* Updated source code for tcp_cm after code review.
+* Fixed a problem with miscalculated statistics in tcp_cm.
+* Removed some compiler warnings.
+* Fixes for running a 32-bit LINX application on a 64-bit machine.
+* Linxdisc updated, version field added to protocol, updated documentation and various buggfixes.
+* Added asserts in liblinx.
+* Feature Negotiation. ETH CM protocol adjusted, now version 3.
+
+
+Version 1.4.1 (2007-09-21)
+==========
+* TCP CM protocol version was bumped to 2. Version 1 and 2 are NOT compatible.
+* Added support for Linux kernel version 2.6.22
+* TCP Connection Manager protocol was incremented.
+* Improved keepalive for the tcp cm.
+
+Version 1.4.0 (2007-09-18)
+==========
+* Rename option live_timeout in the TCP CM to live_tmo for consistency with older releases.
+* Added new linxcfg files, linxcfg.c and linx_cfg_cm.h to MANIFEST.
+* Added linxdump patch files to MANIFEST, updated dir-levels in one patch file.
+* Updated User's Guide.
+* Remove linxcfg_tcp and add the functionality to linxcfg.
+* Update manuals and accordingly.
+* Endian conversion fix when routing messages using a CM that doesn't use skb buffers.
+* Fixed crash if user tried to create a Ethernet connection from unknown device.
+* Cosmetic linxstat fix.
+* Fixed a race between when closing of a socket and a attach is received.
+* Fixed bug in linxstat.
+* Added linxdisc.h to MANIFEST.
+* RLNH controll messages are no longer copied by the ethernet CM.
+* Optimizations and buggfixes in the RLNH layer.
+* Added "receive_but", i.e. receive any signal except the ones mentioned in the filter.
+* Added a linx tcp connection manager.
+* Added new linxdisc files to MANIFEST, fixed bug in linxdisc clean make rule.
+* Added option to filer output by socket type in linxstat.
+* Better collision handling and supervision of peers in linxdisc.
+* Support for Linux Kernel 2.6.22 without the ERRORCHECKS=yes option (struct sk_buff changed).
+* Renamed linxdump patches to make it easier to apply them in correct order.
+* Allow users to select radix when displaying signo in linxdump.
+* Fixed build issue with Linx on SUSE linux.
+* Add missing info and fix minor formatting issues in linxstat documentation.
+* Add missing kernel version declaration in kernel Makefile.
+* Add "batch mode" to linxstat, in batch mode linxstat just print # of LINX sockets.
+* Fixed linxdump failing to print signo on 64 bit architectures.
+* Added fix for linxdump not being able to save capture files.
+
+Version 1.3.0 (2007-07-05)
+==========
+* EthCM: MTU is now fetched from the device or set when creating the link.
+* Added link attribute.
+* Added linx_get_stat and linx_free_stat to the LINX user api and updated documentation.
+* linxstat can now display per socket statistics.
+* Changed per socket statistics counters to 64bit.
+* Documentation was not updated when the spid field was removed from linx_hunt_param, fixed now.
+* Added statistics counter per-socket (enable with SOCK_STAT=yes).
+* Fixed memory leak in linxdisc.
+* Fixed bug where LINX_INFO_SIGNAL_PAYLOAD could return with a locked spinlock.
+* LINX_INFO_NAME now returns 0 and empty string if LINX socket has not been assigned a huntname yet.
+
+Version 1.2.0 (2007-05-14)
+==========
+* Added the MEM_FRAGMENTATION_SUPPORT=yes build option. Used to enable memory fragmentation handling as part of intra process communication.
+* Added Modules.symvers to clean make target.
+* Fixed memory leak/wild free in linx_receive() if non EINTR error is returned from recvmsg.
+* Fixed a race on SMP where the LINX socket slab cache could be used after it was destroyed.
+* Fixed a race on SMP between receiving a fragment of a message and disconnecting the link.
+* Fixed a race when receiving a message while closing a socket.
+* linx_bmark now supports mixed endian.
+* Fixed a bug with no_of_pend_attach counter.
+* Updated and changed name for example/simple to example/linx_basic.
+* Updated and changed name for example/linx_bmark to bmark/linx_bmark.
+* Remove endian conversion of signo when forwarding messages over multihop links.
+* Modprobe works after running "make install" as root. Modules can be uninstalled by "make uninstall".
+* Renamed some module parameters. max_sock_per_link to linx_max_sockets_per_link, max_num_links to linx_max_links, linx_sockbuf_max to linx_sockbuf_size, linx_osattref_max to linx_max_attrefs and linx_spid_max to linx_max_spids.
+* Added error checking of previously missed out memory allocations.
+* Removed annoying error message when asking for the name of a dead process.
+* Removed debug message from linxdisc.
+* Fixed a race between attacher and attachee.
+* Updated liblinx/linx.c after a shorter review session.
+* Fixed a problem with linxdisc exiting when network load was high on a node.
+* Fixed some erroneous information in man page for linx_receive_w_tmo().
+* Fix some minor ETHCM statistic bugs (stat.c/stat.h/stat.mk).
+* Added two patch files, one for tcpdump and one for libpcap. These two patches are needed for linx message trace.
+* Added LINX Message Trace to MANIFEST.
+* sendpage() on LINX sockets results in a NOTSUPPORTED instead of a call to sendmsg().
+* Fix poll() bug in the LINX kernel module and optimized performace as well.
+* linux/config.h -> linux/autoconf.h, added {} around 2-statement else-branch.
+* Compile-time configuration of ETH_CM statistics.
+* Function call API for Creating/Destroying links.
+* Fixed interrupted syscall bug during linx_receive_w_tmo().
+* Support for Linux Kernel version 2.6.20 (INIT_WORK fix).
+* Added missing ntohl() and fixed strncmp() bug in linxdisc.
+* Fixed an erroneous increment of the use count of linx_eth_cm.
+* Optimized LINX library.
+* Changed send* to return errno EPIPE if dest socket is being closed.
+* Removed dependencies on linux/compiler.h from example/linx_bmark
+* linx_receive_w_tmo now uses poll() instead of select() due to problems with many file descriptors (>1024) in select().
+* Renamed main.c and common.c to linx_bmark.[hc].
+* Added internal message trace support, first iteration.
+* Removed ioctl() calls disconnect, param_get and param_set.
+* Fixed cleanup of /proc when unloading cm.
+* Fixed buggy sem-call, was up() should be down().
+* Added missing EXPORT_SYMBOL of linx_trace_lock.
+* Fixed race in linxstat causing inconsistent results.
+* Added LINX_KERNEL_WORKAROUND_1.
+* Fixed a lock bug in the rwsem bug workarounds in rlnh_linux.c.
+* Made the linx trace symbols exported to make sure linx tracing from CM kernel
+  modules can be used.
+* Replace use of init_MUTEX_LOCKED with init_MUTEX followed by up.
+* Fixed an issue with hunt.
+* Fixed some issues with changes in the linux kernel.
+* Fixed bug in skbuff handling causing hangs on ethernet driver level.
+* Moved linx in procfs from /proc to /proc/net.
+* The linx module was split in two. LINX now consist of linx.ko and a module for CM, linx_*_cm.ko
+* Fixed bug causing links not to reconnect when the device MAC address is changed.
+* Fixed bug causing bug (crash) when a connected ethernet device is completely removed.
+* linx_bmark updated.
+* Reworked the timeout wrappers.
+* Removed ifdefs around use of Connection ID.
+* Modified build. Asserts are no longer on by default.
+
+Version 1.1.0 (2006-11-10)
+==========
+
+* Fixed a problem regarding cleanup of orphan sk-buffers.
+* Fixed problems with removal of the LINX kernel module.
+* Updated the linx_bmark example with a throughput benchmark.
+* Updated the linx_bmark example with a liblinx api/socket api option.
+* Corrected bug causing the payload buffer used with sendto() and sendmsg()
+  to be modified on little endian systems.
+* Improved handling of distribution related kernel version dependencies.
+* Some fixes regarding socket reference counting.
+* Some variables were not safe when running SMP.
+* Fixed problems when exceeding max_num_links limit.
+* Added limits and verification of kernel module parameters.
+* Use vmalloc() to allocate spid and attref arrays, kmalloc() can't handle required sizes.
+* Removed bad __init/__exit tags.
+* Extra version handling for FC4 and Monta Vista 401.
+* Fixed a bug in eth_cm/linux.c eth_conn_add_connection(). Connection id overwritten.
+* Fix a memory leak, a double free, and a NULL-ref.
+* Arguments when loading kernel module added.
+* Default hunt signal is now allocated by the linx kernel module.
+* Fixed a small bug regarding attach reference counting.
+* Introduced a retry count while sending through sendto() in linxdisc.
+* All linx_* function calls in liblinx now calls abort() if the LINX handle is invalid.
+* Fix bug in conversion from LINX_OSTIME to struct timeval in receive_w_tmo.
+* Fix linxdisc no longer loses its node_name upon a reread of the conf-file.
+* linxdisc now dynamically adapts to renaming of remote nodes.
+* Added linx_free_name() call to liblinx.
+* Build options to the kernel module are now checked.
+* Fix linxdisc no longer exits when a network interface it depends on is taken down
+* Improved SMP and 64-bit support
+
+Version 1.0.3 (2006-09-15)
+==========
+* Go to linx_panic() when return value from linx_internal_sendmsg() is below zero
+* Added User's Guide
+* Corrected problem when retrieving the hunt name of a socket while the socket is being closed.
+* Fix a problem with arbitrary spids sent to linx_attach().
+* Fix problem with dropped hunts when more than two links are used.
+* Fix a hole when linx_free_buf() could return without clearing *sig.
+* Clear prev and next pointers when sig_adm block is unlinked.
+* x86_64 support added.
+* Basic SMP support added (big tasklet lock).
+* Added node name condifuration to linxdisc.
+* Bug fixed memory leak in linx_attach.
+* Bug fixed problem unloading linx.ko.
+* Added LINX_INFO_SIGNAL_PAYLOAD
+
+Version 1.0.2 (2006-08-18)
+==========
+* Fixed race-conditions in connect/disconnect and create/destory
+* Optimized send-receive latency and throughput by improved receive queue locking.
+* Possible to hunt on your self now.
+* Field signal_reference removed from struct linx_info_signal
+* Field common_filter_offset removed from struct linx_info_filters
+* Field critical_filter_offset removed from struct linx_info_filters
+* Field common_sigselect renamed to sigselect in struct linx_receive_filter_param
+* Field common_sigselect_size renamed to sigselect_size in struct linx_receive_filter_param
+
+Version 1.0.1 (2006-08-11)
+==========
+* Fixed problem with receive of signals larger than 4096 bytes.
+* Fixed memory leak in hunt.c.
+* Removed dead code and NULL-pointer reference in af_linx.c.
+* Removed reference after free.
+* Fixed race-conditions.
+* Optimizations, minor locking changes.
+* Cleanup of comments in header files.
+* Removed unnecessary stack dumps.
+* "Deferred queue exhausted" was changed to a warning.
+* Fixed a bug in linxdisc where it got stuck in a non-interruptible state.
+
+Version 1.0 (2006-07-31)
+==========
+* Initial Release
+
+
+Enea <linx@enea.com>

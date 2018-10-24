@@ -1,0 +1,73 @@
+RELEASE_NOTES
+
+Enea LINX for Linux
+-------------------
+
+Version: 2.5.1
+--------------
+
+This is a release of Enea LINX for Linux open source package, containing
+the LINX kernel module, LINX Ethernet Connection Manager (CM) module,
+LINX TCP CM module, LINX shared memory CM module, the LINX RapidIO CM module,
+CMCL module, the LINX library, tools for supervising and for configuring
+inter-node communication and the LINX Gateway server.
+
+
+Maintence release
+-----------------
+
+This is a maintence release of LINX for Linux.
+
+
+Main Changes in 2.5.x
+---------------------
+
+Added a CMCL (Connection Manager Control Layer), a generic layer suitable for
+eg LINX via shared memory. The purpose of CMCL is to provide peer supervision,
+the CMCL does not handle fragmentation and is not a reliability layer. The CMCL
+is stackable, meaning that the interface towards the layer beneath is the same
+as the interface towards LINX and RLNH-layer.
+
+Added support for IPv6 in the TCP Connection Manager.
+
+Intraprocess sending is now faster, instead of first copying a signal into
+kernel-space and then back out to user-space a pointer is passed between threads
+within the same process.
+
+
+Supported Linux Kernel Versions
+-------------------------------
+
+LINX version 2.5.1 supports vanilla kernels from 2.6.9 to 2.6.38. Vendor
+specific kernels may require modifications in the LINX source code.
+
+
+LINX Development Environment Requirements
+-----------------------------------------
+
+LINX does not use any unusual features and should be easy to build in any
+modern self hosted or cross build environment.
+
+
+LINX Known Bugs and Limitations
+-------------------------------
+
+Once a connection has been setup on an Ethernet interface, the interface's
+MTU, address and name must not be changed (e.g. ifconfig eth1 mtu 1000). If
+the LINX Ethernet CM detects such a change, it prints an error message to
+the kernel ring buffer. Note that from now on, the behaviour of the affected
+connections are unpredictable, e.g. signals may be truncated, etc. The only
+way to ensure correct behaviour is to re-create the affected connections.
+
+From one Ethernet interface, it is not possible to create multiple connections
+to the same destination address. Same applies to TCP/IP CM (IP address instead
+of MAC address etc.).
+
+Some kernel versions and distributions require that LINX is built with
+LINX_KERNEL_WORKAROUND_1 flag set to yes, see README.
+
+The make system lacks proper dependencies.
+
+If the LINXDISC daemon is killed with SIGKILL, it cannot be restarted due to
+lack of cleanup. However, if the user removes the lockfile and established
+LINX-connections, the daemon may be started again.

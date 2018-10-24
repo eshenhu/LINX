@@ -1,0 +1,501 @@
+
+
+			LINX Gateway Server (LGWS) 1.0
+
+Introduction
+============
+	The LGWS comprises of 4 files, wich are listed below with the 
+functional description:
+
+* linxgws.h,	contains the definition for configuration structures, the client
+  		identification parameters and the prototype for the packet 
+		handling callbacks.
+* ose_gwp.h, 	contains the packet type numbers, and packet headers defining 
+  		the gateway protocol library
+* port.h,	contains a few preprocess directives for type porting
+* linxgws.c,	this file implements the core of the server, like configuration
+  		parser, network broadcasting routines, client connection 
+		handling, signal handlers, the protocol table and the 
+		implementation of the protocol callbacks.
+
+	These files are the only things that are needed to compile the 
+LINX Gateway Server , however to be able to run the gateway server then LINX
+kernel module must be loaded.
+       The main components of the gateway server are in the order
+that they are used : the main launcher , the gateway server that serves the 
+clients ( that use the public gateway library ) ,the broadcast server
+that broascasts the name and the IP address of the gateway server and the client
+handler. The typical flow is illustrated bellow:
+
+A.Main Process Launcher     B.Gateway server      C.Broadcast server
+        |                       |                     |
+        V                       V                     V
+        |                
+        |
+    Parse the 
+   configuration
+        | B. Launch the gw server
+         -----------------------
+ 	| 			\
+	|                       |
+        |                   Check for 
+        v                 configuration 
+      Exit                    change
+				|
+			        | C.Launch the broadcast server process
+				|
+				\-------------------->
+				|		      \
+				|		      |			
+			Open the tcp socket      Open udp socket
+			     	|    		      |
+				|		      +<-------
+			 	|	  	      |		\
+		   	    Listen on		 Broadcast 	|
+			    the socket		    loop	|
+				|		      |		|
+				+<--------	      \_________/
+				|         \
+			      Accept 	  |
+			    connection	  |
+	D.Launch the client     |	  | 
+	    handler   	     	|	  | 
+	       <----------------/	  |
+				|         |                    	
+				\--------/
+
+
+
+A.Main process Launcher
+=======================
+	Reads the configuration file and if it is correct is launches the 
+gateway daemon.
+    
+Configuration parser
+--------------------
+	Looks for the file lgwsd.conf in /etc directory .If it finds it
+opens the file. Compiles a regular expresion using the support from libc :
+       
+        ........................................
+      return_code=regcomp(expr_conf+i, match_strings[i] , REG_EXTENDED)
+        ........................................
+
+      match_strings contains the values that will be matched against the 
+configuration file lines. These are the following:  
+	      a. "INTERFACE_NAME=" - after that the interface on that 
+the broadcasts announcing the name will be send.
+    	      b. "GATEWAY_NAME="   -that will be announced by the broadcast
+server.
+	      c. "PUBLIC_PORT="    - this will contain the port on wich the 
+incoming tcp connections will be accepted.
+	      d. "BROADCAST_PORT=" - self description.
+	The public port and the broadcast field can be left empty and they 
+will be configured with the default values.
+        After the configuration is parsed the gateway daemon is launched.
+
+B.The gateway daemon
+====================
+	This is the actual daemon that spawns and control the additional processes
+like the broadcast daemon and the client handlers. 
+        
+        int main_process_launcher( struct configuration_data config )
+
+        The function contains a big loop from that is exits when the process
+receives SIGTERM signal or SIGKILL. User can issue SIGHUP to reread the the
+configuration after it made some changes in it.
+	First thing is the is loop is to check if SIGHUP was signaled to reread
+the configuration file 
+                
+	if (cfg_parser(default_conf_file, &cfg) != 0) {
+	   ...................
+	}
+
+
+        Next it overloads some of the standard signals :
+
+       	     if ( sigaction(SIGx, &sa, NULL) == -1 )
+	                 ........
+             where SIGx are SIGTERM, SIGHUP and SIGCHLD.
+     
+        SIGHUP  is overloaded to be used to restart.
+        SIGTERM is overloaded to be used for clean shutdown.
+        SIGCHLD is overloaded to reap dead children and clean up the zombie 
+processes if there are any.
+
+
+	Opens a TCP socket on the interface and port specified in the 
+configuration file. If not port is specified it will use the default values
+that are :
+        
+	- port 21768 UDP for broadcast
+	- port 16384 TCP for clients
+
+	listening_skt = open_listening_fd(cfg.interface_name, cfg.public_port);
+
+
+        After the configuration has been updated the broadcast
+daemon is launched:
+    switch( broadcast_process_pid = fork() ) {
+                ..........
+        case 0:
+              return_value = broadcast_process( &config );
+                ..........
+    }
+
+     
+                                |
+ 	   while (gateway_daemon_termination_flag != 1)	
+	/-----------------------+
+	|			|
+	|			|
+	|	    1.Read Configuration
+	|			|
+	|	    2.Signal overloading
+	|	   	    	|
+	|           3. Open the listening socket	
+        |                       | Launch the broadcast daemon
+  	|			\---------------------------->
+	|			|
+	|   while (!gateway_daemon_shutdown_flag)
+	|			+<-------------\			  
+	|			|		|
+	|	 	 4.Accept incoming	|
+	|		   connection		|
+	|		        |		|
+	|     Launch the client	|		|
+     	|      handling process	| 		|
+ 	|     <-----------------/		|
+	|			|Exit this loop	|
+	|			|if SIGHUP was  |
+	|			|signaled  	| 
+	|			\--------------/
+	|			| 
+	| Exit this loop if 	| 
+	| SIGTERM was signaled	| 
+	\-----------------------/
+                
+
+	The incoming connections are handled by accept function:
+          ....................
+ 
+	client_skt = accept(listening_skt,
+			    (struct sockaddr *) &client_address,
+			    &sockaddrin_size);
+          ....................
+        client_skt is passed to the client handling process:
+          ....................
+	status = client_handler(client_skt, cfg);
+          ....................
+
+
+C.Broadcast server
+==================
+	The broadcast server is somewhat simple. Its job is to broadcast on the
+interface specified in the configuration the name of the gateway server, the IP
+address and the TCP port upon that the gateway daemon is accepting the clients.
+        At startup it registers the signal handler for SIGHUP, opens the 
+UDP broadcast socket that enters in a endless loop from that it can exit if
+SIGHUP was raised.
+
+
+                        |
+		        |
+    if (sigaction(SIGHUP, &sakill, NULL) == -1)
+                    .........
+                        |
+        Opens the broadcast socket
+         
+  bcast_skt = open_broadcast_fd(cfg->interface_name, 
+  	                        cfg->broadcast_port);
+	   	        |		
+    while (gateway_daemon_shutdown_flag == 0) 
+    	  		+----------------------\
+		  	|			|
+             Receives packets on		|
+    the port specified in the configuration	|
+    	     	        |			|
+   	    Sends back the gateway name		|	
+		  and TCP port			|
+                        |			|
+			\----------------------/
+
+        Gateway clients may seek for a gateway daemon issuing a broadcast UDP 
+packet in the broadcast.
+
+D.Launch the client handler
+===========================
+	The client handler process is forked by the gateway daemon when it gets
+an incoming connection. The socket is passed to the child process that doesn't 
+exists as long as the connection with the client is up.  It acts as a proxy 
+between the client with that connects with the public gateway protocol and hosts
+for the LINX cluster. It receives the gateway protocol messages, interprets them 
+and makes LINX API calls depending on the type of the message. For each protocol
+message the server responds with a reply that can have acknowledgment role or can
+carry data.
+	
+Structure
+----------
+1. Signal overloading
+2. Main loop and the packet parser.
+
+   1. Overloads the signal SIGHUP. This signal will be received from the 
+gateway daemon and its role is to make a clean shutdown.
+	
+	if (sigaction(SIGHUP, &sakill, NULL) == -1) {
+	   .....................................
+	}
+   2. The main loop contains the packet parser that is a table driven 
+interpretor matching a callback for each packet number. These are stated bellow
+and are defined in ose_gwp.h
+
+#define OseGW_PLT_GenericErrorReply  0
+#define OseGW_PLT_InterfaceRequest   1
+#define OseGW_PLT_InterfaceReply     2
+#define OseGW_PLT_LoginRequest       3
+#define OseGW_PLT_ChallengeResponse  4
+#define OseGW_PLT_ChallengeReply     5
+#define OseGW_PLT_LoginReply         6
+#define OseGW_PLT_CreateRequest      7
+#define OseGW_PLT_CreateReply        8
+#define OseGW_PLT_DestroyRequest     9
+#define OseGW_PLT_DestroyReply      10
+#define OseGW_PLT_SendRequest       11
+#define OseGW_PLT_SendReply         12
+#define OseGW_PLT_ReceiveRequest    13
+#define OseGW_PLT_ReceiveReply      14
+#define OseGW_PLT_HuntRequest       15
+#define OseGW_PLT_HuntReply         16
+#define OseGW_PLT_AttachRequest     17
+#define OseGW_PLT_AttachReply       18
+#define OseGW_PLT_DetachRequest     19
+#define OseGW_PLT_DetachReply       20
+#define OseGW_PLT_NameRequest       21
+#define OseGW_PLT_NameReply         22
+#define OseGW_PLT_LAST_ENTRY        OseGW_PLT_NameReply
+
+	Ex:
+OseGW_PLT_InterfaceRequest   
+	  1 -----\
+		 |
+		 v
+           ------------------------------------
+	   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 ...
+	   ------------------------------------
+		 |
+		 v
+    int (*packet_parser)( socket , 
+    			  lenght , 
+			  *payload, 
+			  *client_data);
+
+        The table that assigns a callback for each packet type is defined in the
+file "lgws.c" :
+
+struct packet_handler packet_list[] = {
+       {OseGW_PLT_GenericErrorReply, OseGW_PLT_GenericErrorReply_cbk},
+       {OseGW_PLT_InterfaceRequest, OseGW_PLT_InterfaceRequest_cbk},
+       {OseGW_PLT_InterfaceReply, OseGW_PLT_InterfaceReply_cbk},
+       {OseGW_PLT_LoginRequest, OseGW_PLT_LoginRequest_cbk},
+       {OseGW_PLT_ChallengeResponse, OseGW_PLT_ChallengeResponse_cbk},
+       {OseGW_PLT_ChallengeReply, OseGW_PLT_ChallengeReply_cbk},
+       {OseGW_PLT_LoginReply, OseGW_PLT_LoginReply_cbk},
+       {OseGW_PLT_CreateRequest, OseGW_PLT_CreateRequest_cbk},
+       {OseGW_PLT_CreateReply, OseGW_PLT_CreateReply_cbk},
+       {OseGW_PLT_DestroyRequest, OseGW_PLT_DestroyRequest_cbk},
+       {OseGW_PLT_DestroyReply, OseGW_PLT_DestroyReply_cbk},
+       {OseGW_PLT_SendRequest, OseGW_PLT_SendRequest_cbk},
+       {OseGW_PLT_SendReply, OseGW_PLT_SendReply_cbk},
+       {OseGW_PLT_ReceiveRequest, OseGW_PLT_ReceiveRequest_cbk},
+       {OseGW_PLT_ReceiveReply, OseGW_PLT_ReceiveReply_cbk},
+       {OseGW_PLT_HuntRequest, OseGW_PLT_HuntRequest_cbk},
+       {OseGW_PLT_HuntReply, OseGW_PLT_HuntReply_cbk},
+       {OseGW_PLT_AttachRequest, OseGW_PLT_AttachRequest_cbk},
+       {OseGW_PLT_AttachReply, OseGW_PLT_AttachReply_cbk},
+       {OseGW_PLT_DetachRequest, OseGW_PLT_DetachRequest_cbk},
+       {OseGW_PLT_DetachReply, OseGW_PLT_DetachReply_cbk},
+       {OseGW_PLT_NameRequest, OseGW_PLT_NameRequest_cbk},
+       {OseGW_PLT_NameReply, OseGW_PLT_NameReply_cbk}
+};
+
+	All the static intialized strutures have the following form:
+	
+	struct packet_handler
+	{
+	  OseGW_UL packet_type;
+	    int  (*packet_parser)( int socket , 
+	    	 		   int lenght , 
+				   char *payload, 
+				   struct ClientInfo *client_data);
+	};
+
+        The client data is describe in the following structure defined 
+in "lgws.h" :
+ 
+ struct ClientInfo
+  {
+	   int              sd;
+	   int              commit_suicide;
+	   PROCESS          curr_pid;
+	   OseGW_UL         status;
+	   char             *gw_name;
+	   SIGSELECT        *sig_sel;
+	   OSTIME           rec_tmo;
+	   OseGW_UL         client_version;
+	   OseGW_UL         client_flags;
+	   char             *user_name;
+	   PROCESS          helper;
+           LINX *linx;
+  };
+        
+         
+	 The packets defined by the protocol can be grouped in three major
+categories:
+	a.  Protocol negotiation    
+        b.  Transport
+        c   Error handling and disconnection
+
+2.a Protocol negotiation.
+-------------------------
+
+   When a client tries to establish a link with the LINX Gateway server
+is must discover if the host at the other end uses the same protocol and
+if it does if it uses the same version.
+
+   Message               Value                   Use
+   -------               -----                  -----
+
+   InterfaceRequest        1          Client requests server capabilities
+
+   InterfaceReply          2          Sent by the server with offer of 
+   			   	      	   configuration parameters.
+   CreateInterface         7          Client request from server to open 
+   			   	      	   the LINX interface
+   CreateInterfaceReply    8          Sent by the server with status of success
+   			   	      	   or failure. 
+   DestroyRequest          9          Client signalizes intention to end
+   			   	           communication with the cluster
+   DestroyReply            10         Server send this message to the client to 
+   			   	      	   close the socket.
+
+
+     Client                      Server
+     
+      v                            v          
+      |				   |
+      |				   |
+      \___________________________ |
+      |     InterfaceRequest      \|
+      |                       Selecting reply types 
+      |			    available for this client   
+      | ___________________________/
+      |/    InterfaceReply         |
+Acknowledgement                    |
+      |\__________________________ |
+      |     CreateInterface       \|
+      |                     Opens a LINX endpoint
+      |                      with name supplied
+      |                        in the packet
+      |                            |
+      | ___________________________/                       
+      |/   CreateInterfaceReply                    
+      |
+  Signaling towards 
+  the LINX cluster
+  may begin now
+
+   And ending the connection :
+
+     Client                      Server
+     
+      v                            v          
+      |				   |
+      |				   |
+      \___________________________ |
+      |       DestroyRequest      \|
+      |                         Close the LINX     
+      |				  endpoint
+      | ___________________________/
+      |/      DestroyReply         |
+ Acknowledgement                   |
+      |                         Closes the
+      |                          socket
+      |			           |
+      |                         Destroys    
+      |                      the client handler
+      |				process  
+
+
+2.b. Transport
+--------------
+
+    LINX is an IPC system with a structured logic.It is not  the target of 
+this document to describe how LINX works but there is need of a small 
+description of the common flow in an application that uses LINX. This will be 
+described as in the following text.  A process that needs to communication with
+other process will need initially the other processes LINX endpoint. This is 
+attained using the "hunt" callback. The initiator supplies the name of the target
+process to "hunt" and then will call "receive" callback to obtain a signal from 
+that the hunted process's PID can be obtained. This endpoint is used by the 
+"send" callback to send to the target process a certain signal.
+NOTE: Signal is used here as a descriptor for the atomic data that is send in 
+LINX.
+      A LINX signal is has nothing to do with a Unix signal. 
+
+  Message               Value                   Use
+ ---------              -----                  -----
+
+   HuntRequest      	  15          Client requests the server to issue 
+   			   	      a hunt with the process name specified in
+				      the payload.
+
+   HuntReply	          16          Sent by the server to inform the client 
+   			  	      about the status.
+   ReceiveRequest         13          Client signalizes the server to put itself
+   			  	      in "receive" ( this can be with or without
+				      timeout).
+   ReceiveReply           14          Sent by server with the received payload
+   			  	      from the LINX cluster  
+   SendRequest            11          Client sends as payload a LINX signal to 
+   			  	      the server to be issued to the LINX 
+				      cluster.
+   SendReply              12          Sent by server to notify the client about
+   		           	      the status.
+														     
+
+    Client                       Server
+     
+      v                            v          
+      |				   |
+      |	   			   |
+      \___________________________ |
+      |        HuntRequest        \|
+      |                        linx_hunt()
+      |			           |
+      | ___________________________/
+      |/        HuntReply          |
+Acknowledgement                    |
+      |\__________________________ |
+      |       ReceiveRequest      \|
+      |                        linx_receive()
+      | ___________________________/                       
+      |/ReceiveReply(with a LINX   |                   
+      |                signal as   |
+      |                  payload)  |
+      |\__________________________ |
+      | SendRequest (with a LINX  \|
+      |              signal as     |
+      |       	     payload)      |   
+      |                        linx_send()
+      | ___________________________/                       
+      |/  SendReply                |                   
+      |                            |
+      |                            |
+
+      The "hunt" call is asyncronous. It is not mandatory to get imediately a 
+response. The figure above illustrates the case in that the response comes 
+promptly just to make a clearer picture. The response from a hunt call can be 
+processed whenever the client needs that.
+
+2.c. Error handling and disconnection
+      In the case the client handling process on the server encounters an error
+it will close the socket and exit gracefully.

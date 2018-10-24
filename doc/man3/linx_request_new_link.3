@@ -1,0 +1,148 @@
+.TH LINX_REQUEST_NEW_LINK 3 "2006-07-30" 1.0 "LIBLINX"
+.SH NAME
+linx_request_new_link() - request a new link signal.
+.br
+linx_cancel_new_link() - cancel a new link request.
+
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "LINX_NLREF linx_request_new_link(LINX *" linx ", LINX_NLTOKEN " token ");"
+.br
+
+.BI "int linx_cancel_new_link(LINX *" linx ", LINX_NLREF *" nlref ");"
+
+.SH DESCRIPTION
+Request a new link signal from LINX when a new LINX link is available. The
+.I token
+is passed back and forth between the calling LINX endpoint and the LINX kernel
+module to keep track of which LINX link was sent in the last new link signal.
+The first time a LINX endpoint calls
+.BR linx_request_new_link "() "
+the value of the
+.I token
+is ignored. The
+.I token
+is then returned in the new link signal from the LINX kernel module and should
+be used by the LINX endpoint in the next
+.BR linx_request_new_link "() "
+call. If a LINX link unknown to the LINX endpoint is present when the
+.BR linx_request_new_link "()"
+call is made a new link signal is immediately sent to the caller. Two or more
+consecutive calls to
+.BR linx_request_new_link "() "
+are allowed from the same LINX endpoint. The 
+.BR linx_request_new_link "() "
+call returns a reference handle which is used in the
+.BR linx_cancel_new_link "() "
+call if a request is to be cancelled. After a cancellation no more new link
+signals are received if the socket has no other pending new link requests. 
+
+.I linx
+is the handle of the own LINX endpoint.
+.br
+
+.I token 
+is passed back and forth between the calling LINX endpoint and the LINX
+kernel module.
+.br
+
+.I nlref
+is the reference used to cancel a pending new link request.
+.br
+
+The syntax of the new link signal received when a new link is available is:
+
+.RS
+.nf
+struct linx_new_link {
+	LINX_SIGSELECT signo;
+	LINX_NLTOKEN token;
+	int name;
+	int attr;
+	char buf[1];
+};
+.fi
+.RE
+
+.BR signo
+is LINX_OS_NEW_LINK_SIG,
+.BR token
+is the token value to be used in the next request for a new link signal,
+.BR name
+is the offset into
+.BR buf
+where the name of the new link is stored, the name is null terminated,
+.BR attr
+is the offset into
+.BR buf
+where the attributes, if any, of the link are stored, the attribute string
+is null terminted,
+.BR buf
+is a character buffer containg the name and the attributes, if any, of the link.
+
+.SH "RETURN VALUE"
+.BR linx_request_new_link "() "
+returnes an new link reference (LINX_NLREF) when successful,
+otherwise on failure LINX_ILLEGAL_NLREF is returned.
+.BR linx_cancel_new_link "() "
+returns 0 on success and -1 on failure. In case of failure
+.I errno 
+will be set. 
+.SH ERRORS
+
+.BR EBADF
+The
+.IR linx
+handle refers to an invalid socket descriptor.
+.br
+
+.B ENOMEM
+Insufficient memory is available.
+.br
+
+.B EINVAL
+Returned by
+.BR linx_cancel_new_link "() "
+when trying to cancel an non-existent new link request.
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH SEE ALSO
+.BR linx "(7)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

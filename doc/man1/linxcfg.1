@@ -1,0 +1,326 @@
+.TH LINXCFG 1 "2010-01-20" 1.5 "LINX"
+.SH NAME
+linxcfg \- a configuration utility for creating LINX links to other nodes
+.SH SYNOPSIS
+.B linxcfg [-t <cm>] [-v] <command> [COMMAND PARAMETERS and OPTIONS]
+
+.B linxcfg [-t <cm>] [-v] destroy <linkname> [<link 2>...]
+
+.B linxcfg -h
+
+.B linxcfg help <cm>
+
+.B linxcfg -t <cm> [help]
+
+.SH DESCRIPTION
+.B linxcfg
+is the LINX configuration utility. Depending on the
+.I command
+given,
+.B linxcfg
+can destroy or create links using the specified Connection Manager (CM).
+
+.SH OPTIONS
+
+.B linxcfg
+has common options to all commands which should be placed
+.B before
+the actual
+.I command
+
+.IP "-h, --help"
+Display help and exit.
+
+.IP "-t, --type <cm>"
+Specifies
+.I cm
+as the Connection Manager to use. If this option is not provided,
+.I "eth"
+will be used as the default CM.
+
+You can use
+.B -h
+to list all available CMs.
+
+.IP "-v, --verbose"
+Verbose mode.
+
+.IP "-c, --cf, --conn-feature <feature[=value]>"
+Adds a connection feature. This option can be specified several times.
+
+.IP "-l, --lf, --link-feature <feature[=value]>"
+Adds a link feature. This option can be specified several times.
+
+.SH COMMANDS
+
+.TP
+create PARAMETERS
+Creates a connection link to another node. The
+.I PARAMETERS
+depend on the CM specified, see below for more details.
+
+A remote link cannot be used until also the remote node creates
+the other end of the link (a link back to the originating node).
+The state is "connecting" until both sides are ready and
+communication via the LINX protocol can begin.
+
+
+.TP
+destroy <linkname> [<link2>...]
+Destroy the connection link with the name
+.I linkname.
+
+.TP
+help [<cm>]
+Provides help about the given
+.I cm
+, either specified in
+.B -t
+or after the
+.B help
+command.
+
+If no
+.I cm
+was specified, it will show a list of available CMs.
+
+.SH OPTIONS TO DIFFERENT CONNECTION MANAGERS
+
+.SS Ethernet CM
+
+The
+.B Ethernet CM
+is specified with the
+.I "eth"
+keyword, which is actually the default if no other CM was specified.
+
+The
+.B create
+command takes the following options:
+
+.TP
+create <macaddr> <interface> <linkname> [OPTIONAL PARAMETERS]
+
+.TP
+macaddr
+Specify the remote mac address of the node to connect to, e.g.
+0a:1b:2c:3d:4d:5e.
+
+.TP
+interface
+Specify the Ethernet interface to use. Ex.: eth0.
+
+.TP
+linkname
+Name of the connection link. This is the link part of the path in a remote
+hunt name to LINX endpoints on the other node. It will also be the
+name seen in
+.I /proc/net/linx/cm/eth/<linkname>
+
+.IP "Optional parameters"
+
+.TP
+--window_size=nnn
+This is the send/receive window_size, in number of packets on the link,
+and may need to be modified to adapt LINX to really slow or really fast
+Ethernet performance.
+.br
+Both the local and remote side negotiate the window size, being the
+smallest of the two sizes the selected one.
+The default 128 messages should be sufficient in most configurations.
+The window size shall always be of a power of 2.
+Size 0 means to use the default window size.
+
+.TP
+--defer_queue_size=nnn
+The defer queue size is in packages, with the size depending on the LINX link.
+The defer queue is used on the sender side when the send queue is full.
+Every message sent, when the send queue is full, is stored in the defer queue,
+until the send queue has room for more messages.
+The defer queue size is the maximum number of packages, with messages,
+that can be stored in the defer queue before the link is disconnected,
+due to lack or resources.
+The default value 2048 packages should be sufficient in most systems.
+Size 0 means to use the default defer queue size.
+
+.TP
+--conn_tmo=nnn
+The connect timeout specifies the time, in milliseconds, to wait until a
+connection attempt fails and a new attempt is made. Once connected, it is used
+as a supervision time-out, i.e. every conn_tmo/3 milliseconds, LINX checks if
+any packets from the peer has been received. LINX disconnects the connection
+after four consequtive conn_tmo/3 timeout periods without any packets from the
+peer. Tmo 0 means to use the default timeout (1000ms).
+
+.TP
+--mtu=nnn
+The MTU (Maximum Transmission Unit) specifies the size in  bytes of the
+largets packet that the Ethernet protocol can pass onwards (this excludes the
+size of the Ethernet header). If not set the MTU is fetched from the interface.
+Typcially a MTU of 1500 bytes is used for Ethernet.
+
+.TP
+--attributes=s
+The attribute option gives the possibility to assign an arbitrary string to
+the link when it is created. This string is included in the new_link signal,
+which is sent to all link supervisors. More information on link
+supervisors can be found in
+.TP
+--coreid=nn
+The coreid is used in a multicore environment to configure the 
+destination coreid.
+
+.BR linx "(7) "
+man page.
+
+.SS TCP CM
+
+The TCP CM is specified using the
+.I tcp
+keyword.
+
+The
+.B create
+command takes the following parameters:
+
+create <ip> <linkname> [OPTIONAL PARAMETERS]
+
+.TP
+ip
+The IP address to connect to.
+
+.TP
+linkname
+Name of the connection link. This is the LINX link part of the path in
+a remote hunt name to LINX endpoints on the other node. It will also be the
+name seen in
+.I /proc/net/linx/cm/tcp/<linkname>
+
+.IP "Optional parameters"
+
+.TP
+--live_tmo=<size>
+The live_tmo parameter is the time in milliseconds between every heartbeat
+that is used to detect if the connection has gone down. The default value is
+1000 ms.
+.TP
+--use_nagle=<bool>
+Set to 1 if nagle algorithm shall be used on the socket for the connection.
+Default is off.
+.TP
+--attributes=<s>
+The attribute option gives the possibility to assign an arbitrary string to
+the link when it is created. This string is included in the new_link signal,
+which is sent to all link supervisors.
+
+.SS RIO CM
+
+The RIO CM is specified using the
+.I rio
+keyword.
+
+The
+.B create
+command takes the following parameters:
+
+create <local_port> <port> <dev_id> <mbox> <if> <link> [OPTIONAL PARAMETERS]
+
+.TP
+local_port
+The local RapidIO port to connect to.
+
+.TP
+port
+The remote RapidIO port to connect to.
+
+.TP
+dev_id
+The RapidIO device to connect to.
+
+.TP
+mbox
+The RapidIO mailbox id to use.
+
+.TP
+if
+The RapidIO interface to use.
+
+.TP
+link
+Name of the connection link. This is the LINX link part of the path in
+a remote hunt name to LINX endpoints on the other node. It will also be the
+name seen in
+.I /proc/net/linx/rlnh
+
+.IP "Optional parameters"
+
+.TP
+--tmo=<tmo>
+The tmo parameter is the time in hundreds of milliseconds between
+every heartbeat that is used to detect if the connection has gone
+down. The default value is 500 ms.
+.TP
+--mtu=<mtu>
+Specifies the MTU (Maximum Transmission Unit) in bytes of the largest
+that the RIO CM can pass onwards, including the size of the RapidIO
+header. If not explicitly given, the MTU is fetched from the RapidIO device.
+
+.SH FILES
+None.
+.SH DIAGNOSTICS
+.I linxcfg
+will display more verbose information to standard out, if the -v option is
+specified.
+.SH KNOWN BUGS
+None.
+.SH EXAMPLES
+.nf
+linxcfg create 01:23:a4:4f:b3:ac eth0 link_A
+
+linxcfg destroy link_A
+
+linxcfg -t tcp create 192.168.1.1 link_A
+
+linxcfg -t tcp destroy link_A
+
+linxcfg -t rio create 0 0 0 0 rio0 riolink0 --mtu=128 --tmo=10
+
+linxcfg -t rio destroy riolink0
+
+.fi
+.SH "SEE ALSO"
+.BR linx "(7), "
+.BR linxstat "(1), "
+.BR linxdisc "(8)"
+
+.SH AUTHOR
+Enea LINX team
+
+.SH COPYRIGHT
+
+Copyright (c) 2006-2010, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

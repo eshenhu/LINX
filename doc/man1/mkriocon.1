@@ -1,0 +1,94 @@
+.TH MKRIOCON 1 "2008-08-25" 1.0 "LINX"
+.SH NAME
+mkriocon \- create LINX RapidIO connections.
+.SH SYNOPSIS
+.B mkriocon [OPTIONS] <connection>
+
+.SH DESCRIPTION
+Create a LINX RapidIO connection to a remote node.
+
+.SH OPTIONS
+
+.IP "-h, --help"
+Display help and exit.
+
+.IP "Mandatory options"
+
+.IP "-p, --port=<rio port>"
+Specify the remote port number of the node to connect to, e.g. 0.
+
+.IP "-l, --local-port=<rio port>"
+Specify the local port number to use, e.g. 0.
+
+.IP "-I, --id=<rio device id>"
+Specify the RapidIO device id to connect to, e.g. 1.
+
+.IP "-i, --if=<rio device>"
+Specify the RapidIO interface to use, e.g. rio0.
+
+.IP "Optional options"
+
+.IP "-t, --tmo=nn"
+The connection supervision timeout specifies the time (in hundreds of msec) to
+wait until a connection is considered broken. Default is 5 (yielding a timeout
+of 500 msec) and should be sufficient in most systems.
+Tmo 0 means to use the default timeout.
+
+.IP "-M, --mtu=nnn"
+The MTU (Maximum Transmission Unit) specifies the size in  bytes of the
+largets packet that the RapidIO protocol can pass onwards (this includes the
+size of the RapidIO header). If not set the MTU is fetched from the interface.
+Typically an MTU of 256 bytes is used for RapidIO.
+
+.SH FILES
+None.
+
+.SH DIAGNOSTICS
+None.
+
+.SH KNOWN BUGS
+None.
+
+.SH EXAMPLES
+.nf
+mkriocon --port=0 --local-port=0 --mbox=1 --id=1 --if=rio0 riocon_A
+mkriocon -p 0 -l 0 -m 1 -I 1 -i rio0 riocon_A
+.fi
+
+.SH "SEE ALSO"
+.BR linx "(7), "
+.BR linxcfg "(1), "
+.BR linxstat "(1), "
+.BR mklink "(1), "
+.BR rmriocon "(1)"
+
+.SH AUTHOR
+Enea LINX team
+
+.SH COPYRIGHT
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

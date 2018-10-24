@@ -1,0 +1,11 @@
+Download tcpdump-4.0.0.tar.gz to <mydir>.
+
+Copy tcpdump-4.0.0-linxtrace-001.patch to <mydir>. 
+
+> cd <mydir>
+> tar -xvf tcpdump-4.0.0.tar.gz
+> patch -p1 < tcpdump-4.0.0-linxtrace-001.patch
+> cd tcpdump-4.0.0
+> ./configure
+> make
+> make install

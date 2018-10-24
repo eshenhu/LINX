@@ -1,0 +1,90 @@
+README
+
+1.  Introduction
+
+Wireshark can be patched in order to properly dissect and display
+both Linxdisc traffic and LINX internal traffic. The dissector for
+LINX internal messages can translate spids to names if the LINX
+kernel module is loaded. 
+
+
+2.  Download Wireshark sources
+
+Download the Wireshark sources for 1.0.6 and unpack, the patches
+are independent of eachother and can be installed seperatly.
+
+http://www.wireshark.org/download/src/wireshark-1.0.6.tar.gz
+
+
+3.  Wireshark dissector patch for Linxdisc messages.
+
+Linxdisc is a discovery daemon enabling peer-discovery and dynamic
+creation of LINX links to other nodes also running Linxdisc.
+
+To apply the Linxdisc patch:
+
+> cd <path to wireshark>
+
+> patch -p1 < wireshark-1.0.6-linxdisc-001.patch
+
+
+4.  Wireshark dissector patch for LINX internal messages.
+
+The libpcap library has to be patched with the LINX patch,
+patch/libpcap/libpcap-0.9.8-linxtrace-001.patch and libpcap must
+be built as a shared object as well.
+
+Patch Wireshark the file "packet_linx_internal.c" will be added
+in epan/dissectors, also "Makefile.common" is patched. 
+
+> cd <path to wireshark>
+
+> patch -p1 < wireshark-1.0.6-linx-internal-dissector-002.patch
+
+
+5.  Build wireshark
+
+Configure and build Wireshark, for LINX internal messages Wireshark
+must be told where to look for the LINX patched version of libpcap
+if the LINX patched version is not installed as default.
+
+> cd wireshark
+> ./autogen.sh
+> ./configure --with-pcap=<path to libpcap>
+> make
+
+
+6. Setting up Wireshark for LINX internal messages
+
+LINX message trace is design so it sends out traffic on interface
+linx0 with the type number 147 and the linx protocol (the LINX
+type number is used as the ARP type and that's why the LINX
+libpcap patch is needed). The type number 147 is a pre-defined
+Ethernet type number that is reserved for protyping and internal
+use, Wireshark must be told how to interpret the trace, this is
+done with in the menus:
+
+Edit->Preferences->Protocols->DLT_USER->Edit->New
+
+Then enter "linx_int" in the payload_proto field, after that
+Wireshark is able to dissect the traffic on linx0 correctly.
+
+
+8.  Known issues
+
+* The huntname that is displayed in the source and destination
+column is not saved but fetched from the LINX kernel module using
+linx_get_name() when Wireshark is recording or parsing the
+dumpfile. For instance if a filter is turned on then Wireshark
+must fetch the huntnames again. If the LINX socket has been closed
+is no longer present in the system only the LINX spid is
+displayed.
+
+* In the main window of Wireshark the lower most pane displaying
+Packet Bytes assumes that all traffic is in network endian but the
+headers in the LINX internal protocol are in host endian. On a
+little endian machine the headers are displayed incorrectly in the
+Packet Bytes field.
+
+[END OF DOCUMENT]
+

@@ -1,0 +1,37 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>11.1 Protocol Description</title><link rel="stylesheet" href="html.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><meta name="keywords" content=""><link rel="start" href="title.html" title="LINX Protocols"><link rel="up" href="cmcl.html" title="11. Enea LINX Connection Manager Control Layer"><link rel="prev" href="cmcl.html" title="11. Enea LINX Connection Manager Control Layer"><link rel="next" href="linx-proto-index.html" title="Index"><base target="body"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><td colspan="2" align="left"><span class="headerbaseline">Document Version 21</span></td><td align="right"><IMG src="images/enea_logo.png"></td></tr><tr><td colspan="3" align="center" valign="bottom"><h2 class="title"><a name="book_linx_proto"></a>LINX Protocols</h2></td></tr><tr><td width="20%" align="left"><a accesskey="p" href="cmcl.html">Prev</a> </td><th width="60%" align="center">11. Enea LINX Connection Manager Control Layer</th><td width="20%" align="right"> <a accesskey="n" href="linx-proto-index.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="cmcl-proto-desr"></a>11.1 Protocol Description</h2></div></div></div><p>The purpose of the CMCL is to provide peer supervision, the CMCL
+    does not handle fragmentation and is not a reliability layer.
+    Fragmentation and loss-less in-order delivery of messages is left to the
+    underlying driver or connection manager.</p><p>Control signaling between the two instances of the CMCL (one
+    instance on each peer of the connection) is recognized by using the src
+    and dst parameters in the LINX protocol. src is always set to zero, and
+    the dst parameter is used to identify the control signal.</p><p>The CMCL for linux sends a small payload when sending control
+    messages, even though all information that is needed is submitted in the
+    underlying medias protocol. This payload can be disregarded.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2631750"></a>11.1.1 LINX CMCL Connection Establishment Algorithm</h3></div></div></div><p>The following headers types are used in Connection Establishment
+      and Disconnection:</p><div class="table"><a name="cmcl-connprotonumbers"></a><p class="title"><b>Table 11.1 CMCL Connection Header Types</b></p><div class="table-contents"><table summary="CMCL Connection Header Types" cellpadding="5" border="1"><colgroup><col><col><col></colgroup><tbody><tr><td>Header type</td><td>Value</td><td>Definition</td></tr><tr><td>CMCL_CONN_REQ</td><td>0x1</td><td>Connect request. Used to request connection
+              establishment.</td></tr><tr><td>CMCL_CONN_ACK</td><td>0x2</td><td>Connect acknowledgement. Used to acknowledge the
+              connection request.</td></tr><tr><td>CMCL_CONN_RST</td><td>0x3</td><td>Reset. Used to cancel the connection.</td></tr></tbody></table></div></div><br class="table-break"><p>The CMCL will start in state Disconnected and will remain in that
+      state until the RLNH layer calls downcall connect and CMCL will enter
+      Connection_1 state where it in turn requests a connection from the
+      underlying layer by calling downcall connect.</p><p>The CMCL will remain in state Connecting_1 until it receives an
+      upcall connected from the underlying layer and then it will enter the
+      Connecting_2 state where the CMCL tries to establish a connection to its
+      peer by sending a CONN_REQ message.</p><p>The CMCL will remain in state Connection_2 until it receives a
+      CONN_REQ or CONN_ACK from its peer and will then enter state Connected
+      and call the connected upcall to the RLNH.</p><p>In state Connected, the CMCL will supervise the peer by sending
+      keep-alive messages. If no response is received after three consecutive
+      keep-alive messages the CMCL will enter state Disconnecting, send a
+      CONN_RST to its peer and call the disconnect downcall to the underlying
+      layer.</p><p>When the underlying layer calls upcall disconnected the CMCL will
+      enter Disconnected state and in turn calls upcall disconnected to the
+      RLNH.</p><p>In state Connected, if the RLNH calls downcall disconnect, the
+      CMCL will enter state Disconnecting, send a CONN_RST message to its peer
+      and call downcall disconnect to the underlying layer.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2631894"></a>11.1.2 Enea LINX CMCL User Data </h3></div></div></div><p>The transmit downcall from the RLNH layer is passed straight down
+      to the underlying layer, no header is added.</p><p>The deliver upcall from the underlying layer is passed to the RLNH
+      layer in the same context. While connecting the deliver upcall can
+      sometimes be made while the CMCL is still in Connecting_2 state, in this
+      case the message is queued and delivered after the CMCL enters the
+      Connected state and the next deliver upcall is made or keep-alive
+      message is received.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2631916"></a>11.1.3 Enea LINX CMCL Connection Supervision Protocol</h3></div></div></div><p>Supervision of the connection is needed in order to detect if a
+      peer has been reset.</p><div class="table"><a name="cmcl-hbprotonumbers"></a><p class="title"><b>Table 11.2 CMCL Connection Supervision Header Type</b></p><div class="table-contents"><table summary="CMCL Connection Supervision Header Type" cellpadding="5" border="1"><colgroup><col><col><col></colgroup><tbody><tr><td>Header type</td><td>Value</td><td>Definition</td></tr><tr><td>CMCL_CONN_ALV</td><td>0x4</td><td>Sent periodically to indicate that the sender is
+                alive</td></tr></tbody></table></div></div><p><br class="table-break">The connection alive packet is sent three times per the
+      connection timeout period. The default timeout period is 300ms.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="cmcl.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="cmcl.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="linx-proto-index.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><b>11. Enea LINX Connection Manager Control Layer</b> </td><td width="20%" align="center"><a accesskey="h" href="title.html">Home</a> | <a accesskey="i" href="ix01.html">Index</a></td><td width="40%" align="right" valign="top"> <b>Index</b></td></tr><tr> </tr><tr><td colspan="3" align="center">© Enea Software AB 2011</td></tr></table></div></body></html>

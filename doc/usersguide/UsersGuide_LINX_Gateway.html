@@ -1,0 +1,961 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Enea® LINX Gateway User's Guide - Document v1.0</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta name="description"
+  content="LINX, Open IPC Protocol for heterogeneous distributed systems" />
+  <meta name="keywords" content="LINX, OSE, Enea" />
+  <style type="text/css">
+	    .pagebreak {page-break-before:always}
+	    body { margin-left:1cm;  font-size:90%;}
+	    .exptab {margin-top:0; margin-bottom:0; font-size:90%; text-align:left; }
+	  </style>
+</head>
+
+<body>
+<a name="top" id="top"></a> 
+
+<h1>Enea<sup>®</sup> LINX Gateway User's Guide</h1>
+
+<div class="toc">
+<ul>
+  <li><a href="#overview">1. LINX Gateway Overview</a> 
+    <ul>
+      <li><a href="#techcomp">1.1 Technical Components</a></li>
+    </ul>
+  </li>
+  <li><a href="#configuring">2. Configuring the LINX Gateway Server</a> 
+    <ul>
+      <li><a href="#starting">2.1 Starting the LINX Gateway Server</a></li>
+      <li><a href="#restart">2.2 Restarting the LINX Gateway server</a></li>
+      <li><a href="#conffile">2.3 Configuration File</a></li>
+    </ul>
+  </li>
+  <li><a href="#client">3. Write Gateway Client Applications</a> 
+    <ul>
+      <li><a href="#createdestroy">3.1 Create and Destroy Clients</a></li>
+      <li><a href="#signals">3.2 Signals in Gateway Clients</a></li>
+      <li><a href="#hunt">3.3 Obtain Endpoint IDs via Hunt</a></li>
+      <li><a href="#supervision">3.4 Supervision</a></li>
+      <li><a href="#nonblock">3.5 Non-Blocking Receive Mode</a></li>
+      <li><a href="#error">3.6 Error Handling</a> 
+        <ul>
+          <li><a href="#usingerror">3.6.1 Using the Error Handler</a></li>
+          <li><a href="#checkerror">3.6.2 Error Handling Using Checkup
+            Calls</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><a href="#findgw">4. Find Gateway</a> </li>
+  <li><a href="#linxgwcmd">5. linxgwcmd - Gateway Command Tool</a> </li>
+</ul>
+</div>
+<!-- Comment: This file should be edited with Amaya (e.g. v9.55) to
+keep a consistent file format - at least do the final changes in Amaya
+and save the file -->
+
+<p>Document version: 1.0</p>
+
+<p style="margin-left:10pt;margin-right:10pt;font-size:80%;"><i>Copyright ©
+Enea Software AB 2010. <br />
+<br />
+Enea®, Enea OSE®, and Polyhedra® are the registered trademarks of Enea AB and
+its subsidiaries. Enea OSE®ck, Enea OSE® Epsilon, Enea® Element,
+Enea® Optima, Enea® LINX, Enea® Accelerator, Polyhedra® FlashLite,
+Enea® dSPEED, Accelerating Network Convergence&trade;, Device Software
+Optimized&trade;, and Embedded for Leaders&trade; are unregistered trademarks
+of Enea AB or its subsidiaries. Linux is a registered trademark of Linus
+Torvalds. Any other company, product or service names mentioned in this
+document are the registered or unregistered trademarks of their respective
+owner. <br />
+The source code included in LINX for Linux is released partly under the GPL
+(see COPYING file) and partly under a BSD type license - see license text in
+each source file. </i> </p>
+
+<p style="margin-left:10pt;margin-right:10pt;font-size:80%;"><i>Disclaimer:
+The information in this document is subject to change without notice and
+should not be construed as a commitment by Enea Software AB.</i></p>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="overview">1. LINX Gateway Overview</h2>
+
+<p>The following describes the gateway concepts and the way the gateway can
+be used as a part of a system. It describes how to use, configure and write
+clients for the Enea<sup>®</sup> LINX Gateway server. </p>
+
+<p>The LINX Gateway server allows existing user applications using the OSE
+Gateway client API to communicate seamlessly with a LINX cluster without
+rewriting or even recompiling. </p>
+
+<h3 id="techcomp">1.1 Technical Components</h3>
+
+<p>On a Linux system with the LINX kernel module installed the LINX Gateway
+Server is used to make the LINX network available to clients using the
+Gateway client. The clients could either run on the same node as the LINX
+Gateway Server or connect to a LINX Gateway Server running on a remote node.
+</p>
+
+<p>The client library contains an LINX/OSE-like API for signal communication
+with the Gateway server and with the LINX endpoints connected to it. </p>
+
+<p>The Gateway server handles new clients, and responds to broadcast messages
+from clients, to notify clients about its existence. The Gateway Server
+client processes handle the Gateway clients in the LINX environment after
+they have been created. </p>
+
+<p>Example of a LINX cluster and how application using the Gateway client can
+connect to the LINX cluster via the LINX Gateway server. </p>
+
+<center>
+<img src="images/linxgw-overview.png" alt="" /></center>
+
+<h2 id="configuring">2. Configuring the LINX Gateway Server</h2>
+
+<p>The LINX Gateway server is configured through a file that is read at
+startup and whenever the gateway receives a SIGHUP signal. When a SIGHUP
+signal is received all clients processes are killed and all client
+connections are closed. </p>
+
+<h3 id="starting">2.1 Starting the LINX Gateway Server</h3>
+
+<p>At startup, LINX Gateway server must read a configuration file to set up
+the system. The configuration file can be specified on the command line,
+otherwise the LINX Gateway server looks for a configuration file named
+linxgws.conf in the /etc directory on the Linux node. </p>
+
+<h3 id="restart">2.2 Restarting the LINX Gateway server</h3>
+
+<p>If the server receives a SIGHUP during execution, the configuration file
+is re-read and the server is restarted with the new configuration. </p>
+
+<h3 id="conffile">2.3 Configuration File</h3>
+
+<p>The configuration file is needed when starting an LINX Gateway Server. The
+configuration file is a text file, an example configuration file is included
+in linxgw/linxgws/example.conf. </p>
+
+<p><strong>Gateway name</strong></p>
+
+<p>Specifies the name of the LINX Gateway server, the name is advertised on
+the broadcast UDP port to all clients. </p>
+
+<p>Example: <code>GATEWAY_NAME=my_gateway</code></p>
+
+<p><strong>Interface name</strong></p>
+
+<p>Specifies what network interface to use when broadcasting advertisements,
+the interface has to be configured with an IP address. </p>
+
+<p>Example: <code>INTERFACE_NAME=eth0</code></p>
+
+<p><strong>Public Port</strong></p>
+
+<p>pecifies the TCP port number on which the LINX Gateway Server will accept
+connections, if not specified the default port number 16384 will be used. </p>
+
+<p>Example: <code>PUBLIC_PORT=35700</code></p>
+
+<p><strong>Broadcast Port</strong></p>
+
+<p>Specifies the UDP port number on which the LINX Gateway server will
+advertise its name and the TCP port on that it accepts connections. If the
+variable is left empty the default port number 21768 will be used. </p>
+
+<p>Example: <code>BROADCAST_PORT=21444</code></p>
+
+<h2 id="client">3. Write Gateway Client Applications</h2>
+
+<p>The following describes how to write clients for the LINX Gateway using
+the client API. </p>
+
+<h3 id="createdestroy">3.1 Create and Destroy Clients</h3>
+
+<p>Before a client can communicate through the LINX Gateway Server, it has to
+create an <code>OSEGW</code> connection object, and this is done by calling
+the <code>osegw_create</code> function. The function takes the name of the
+client as an argument, and this name is the one that other clients or LINX
+endpoints in the LINX cluster can hunt for. Other arguments to the function
+are a user number, the TCP address, port to the LINX Gateway server, an
+authentication string, a function pointer to an error handler, and a pointer
+to a user object. The latter pointer is passed to the error handler if
+called. </p>
+
+<p>The error handler is optional. If not wanted, use <code>NULL</code> for
+both the error handler function and the user object handle. </p>
+<pre>	gw = osegw_create("client", 0, "tcp://localhost:12357", NULL, NULL, NULL);
+      </pre>
+
+<p>When the <code>osegw_create</code> function is called, an object
+containing necessary information about the connection is created on the
+client side. This object also hosts a list of signal buffers that belongs to
+the connection. On the gateway side, a process for the client is started.
+This process is used as a representation of the client in the LINX cluster.
+All communication to and from the client goes through that process. </p>
+
+<p>The <code>osegw_destroy</code> call kills the process that represents the
+client, closes the connection to the gateway, frees all allocated signals
+belonging to the connection (if not already freed), and frees the object. </p>
+<pre>	osegw_destroy(gw);
+      </pre>
+
+<h3 id="signals">3.2 Signals in Gateway Clients</h3>
+
+<p>A client communicates with LINX endpoints and other clients through a
+signaling API similar to the OSE signaling API. The commands used for this
+are <code>osegw_alloc</code>, <code>osegw_free</code>,
+<code>osegw_send</code>, <code>osegw_receive</code>, and
+<code>osegw_receive_w_tmo</code>. In addition a few other calls can be used
+for non-blocking receive, <a href="#nonblock">3.5 Non-Blocking Mode
+Receive</a>. </p>
+
+<p>Before a signal can be sent, it has to be allocated with
+<code>osegw_alloc</code>. To avoid memory losses, the call registers the
+signal in a list handled by the <code>OSEGW</code> object that is specified
+in the call. When the signal is sent or freed, it is removed from the list.
+If the <code>OSEGW</code> object is destroyed when there are signals in the
+list, they are silently freed. </p>
+
+<p>Below is an example of a signal allocation: </p>
+<pre>	struct OSEGW_SIGNAL *signal;
+	signal = osegw_alloc(osegw_object, sizeof(OSEGW_SIGSELECT), signal_number);
+      </pre>
+
+<p>And the signal is freed with: </p>
+<pre>	osegw_free(osegw_object, &amp;signal);
+      </pre>
+
+<p>The size of the signal includes the signal number, which is of type
+<code>OSEGW_SIGSELECT</code>. Targets and hosts might also be of different
+endians. This is handled by the Gateway, which means that a signal size used
+by an Gateway client might not be the same on the target. It is therefore
+recommended to use a <code>sizeof (OSEGW_SIGSELECT)</code> call for the size
+parameter. The Gateway does not handle endian conflicts or other
+compatibility issues for the user data. </p>
+
+<p>When a signal is sent by the <code>osegw_send</code> call, it is
+automatically freed and removed from the <code>OSEGW</code> object's signal
+list. Example of an <code>osegw_send</code> call: </p>
+<pre>	osegw_send(osegw_object, &amp;signal, destination_pid);
+      </pre>
+
+<p>The <code>destination_pid</code> argument can be obtained by a hunt call,
+see the section below about process synchronization for more information
+about this. </p>
+
+<p>When a signal is received, it is automatically added to the
+<code>OSEGW</code> objects signal list. The difference between
+<code>osegw_receive</code> and <code>osegw_receive_w_tmo</code> is that the
+latter has an argument in which a timeout can be specified. The call will
+only block for the amount of milliseconds specified, and then it returns,
+even if no signal was received. Time for communication between the client and
+the Gateway has to be added to the specified time. The
+<code>osegw_receive</code> call will block until a signal is received.
+Example of a <code>receive_w_tmo</code> statement: </p>
+<pre>	OSEGW_SIGSELECT sigselect_array[] = {2, 1, 2};
+	struct OSEGW_SIGNAL *signal;
+	signal = osegw_receive_w_tmo(gw, 1000, sigelect_array);
+      </pre>
+
+<p>The call above will block for 1000 ms or until a signal is received. </p>
+
+<p>If the connection to the Gateway server is lost, while blocking in an
+<code>osegw_receive</code>, the error handler is called with the error code
+<code>OSEGW_ECONNECTION_LOST</code> and <code>osegw_receive</code> returns
+<code>OSEGW_NIL</code>. This also applies to
+<code>osegw_receive_w_tmo.</code> </p>
+
+<p>The client library implements a "ping"-mechanism to detect if the server
+has died. If a signal has not been received within
+<code>OSEGW_PING_TIMEOUT</code> milliseconds, the client sends a ping to the
+server to check that it is alive. If the server has not responded to a ping
+within <code>OSEGW_REPLY_TIMEOUT</code> milliseconds, the error handler is
+called with the error code <code>OSEGW_ECONNECTION_TIMEDOUT</code>. As long
+as the error handler returns a non-zero value, this sequence is repeated
+until a server response is received. If the error handler returns zero, the
+error handler is called once more with the error code
+<code>OSEGW_ECONNECTION_LOST</code>. The <code>OSEGW_PING_TIMEOUT</code> is
+configurable at compile-time, see <code>ose_gw.h</code>. </p>
+
+<h3 id="hunt">3.3 Obtain Endpoint IDs via Hunt</h3>
+
+<p>Before communication can take place between Gateway clients and LINX
+endpoints, they have to know each others' endpoint IDs. Endpoint IDs are
+found using the <code>osegw_hunt</code> call, and the name of the destination
+endpoint or client must be known. The syntax looks like this: </p>
+<pre>	OSEGW_OSBOOLEAN osegw_hunt(struct OSEGW ose_gw,
+	                           const char name,
+	                           OSEGW_OSUSER user,
+	                           OSEGW_PROCESS pid_,
+	                           union OSEGW_SIGNAL hunt_sig);
+      </pre>
+
+<p>Below is a complete example that shows how a hunt can be used. </p>
+<pre>	#include "ose_gw.h"
+	#define HUNT_SIG_NO 42
+	
+	struct HUNT_SIGNAL
+	{
+	   OSEGW_SIGSELECT sig_no;
+	};
+	
+	union OSEGW_SIGNAL
+	{
+	   OSEGW_SIGSELECT sig_no;
+	   struct HUNT_SIGNAL hunt_signal;
+	};
+	
+	/*
+	 * This function hunts a process specified by the parameter
+	 * name and then blocks until the process is terminated.
+	 */
+	void supervise_proc(struct OSEGW ose_gw, const char name)
+	{
+	   static const OSEGW_SIGSELECT select_hunt_sig[] =
+	      {1, HUNT_SIGN_O};
+	   static const OSEGW_SIGSELECT select_attach_sig[] =
+	      {1, OSEGW_ATTACH_SIG};
+	   union OSEGW_SIGNAL sig;
+	   OSEGW_PROCESS hunted_proc;
+	   OSEGW_OSATTREF attref;
+
+	   /* Hunt for the process with hunt signal */
+	   sig = osegw_alloc(sizeof(struct
+	                     HUNT_SIGNAL), HUNT_SIG_NO);
+	   (void)osegw_hunt(ose_gw, name, 0, NULL, &amp;sig);
+
+	   /* Wait for the hunt signal */
+	   sig = osegw_receive(ose_gw,
+	   select_hunt_sig);
+
+	   /* Save the hunted process' process id. */
+	   hunted_proc = osegw_sender(ose_gw, &amp;sig);
+	   osegw_free_buf(ose_gw, &amp;sig);
+
+	   /* Supervise the existence of the found process, use the
+	    * default return signal from the kernel.
+	    */
+	   attref = osegw_attach(NULL, hunted_proc);
+
+	   /* Wait for the hunted process to be terminated */
+	   sig = osegw_receive(ose_gw, select_attach_sig);
+	   osegw_free_buf(ose_gw, &amp;sig);
+	}
+      </pre>
+
+<h3 id="supervision">3.4 Supervision</h3>
+
+<p>A Gateway client should supervise other clients or endpoint with the
+<code>osegw_attach</code> call. The syntax for the call is: </p>
+<pre>	OSEGW_OSATTREF osegw_attach(struct OSEGW *ose_gw,
+	                            union OSEGW_SIGNAL **sig,
+                                    OSEGW_PROCESS pid);
+      </pre>
+
+<p>When this call is applied to a client or an endpoint, the signal given as
+an argument will be returned to the caller if the client or endpoint is
+killed. This can be used for controlled communication, with which the sender
+can be sure that signals have been received by the other party. </p>
+
+<p>To cancel an attach, <code>osegw_detach</code> can be used: </p>
+<pre>	void osegw_detach(struct OSEGW *ose_gw, OSEGW_OSATTREF *attref);
+      </pre>
+
+<p>An Example of Controlled Communication</p>
+<pre>	#include "ose_gw.h"
+	#define HUNT_SIG_NO 42
+	
+	struct HUNT_SIGNAL
+	{
+	   OSEGW_SIGSELECT sig_no;
+	};
+	
+	union OSEGW_SIGNAL
+	{
+	   OSEGW_SIGSELECT sig_no;
+	   struct HUNT_SIGNAL hunt_signal;
+	};
+	
+	/*
+	 * This function hunts a process specified by the parameter name and
+	 * does some communication. Afterwards it checks if the hunted
+	 * process is still alive to make sure that the communication
+	 * succeeded.
+	 */
+	
+	void controlled_comm(struct OSEGW *ose_gw, const char *name)
+	{
+	   static const OSEGW_SIGSELECT
+	   select_hunt_sig[] = {1, HUNT_SIG_NO};
+	   static const OSEGW_SIGSELECT
+	   select_attach_sig[] = {1, OSEGW_ATTACH_SIG};
+	   union OSEGW_SIGNAL *sig;
+	   OSEGW_PROCESS hunted_proc;
+	   OSEGW_OSATTREF attref;
+
+	   /* Hunt for the process with hunt signal */
+	   sig = osegw_alloc(sizeof(struct HUNT_SIGNAL), HUNT_SIG_NO);
+	   (void) osegw_hunt(ose_gw, name, 0, NULL, &amp;sig);
+
+	   /* Wait for the hunt signal */
+	   sig = osegw_receive(ose_gw, select_hunt_sig);
+
+	   /* Save the hunted process' process id. */
+	   hunted_proc = osegw_sender(ose_gw, &amp;sig);
+	   osegw_free_buf(ose_gw, &amp;sig);
+
+	   /*
+	    * Supervise the existence of the found process, use the
+	    * default return signal from the kernel.
+	    */
+	   attref = osegw_attach(NULL,hunted_proc);
+
+	   /* communicate with the hunted process here. */
+
+	   /*
+	    * Check if the hunted process is still alive, because
+	    * it can be assumed that the communication succeeded.
+	    */
+	   sig = osegw_receive_w_tmo(ose_gw, 0, select_attach_sig);
+	   if (if sig != OSEGW_NIL)
+	   {
+	      if (osegw_sender(ose_gw, &amp;sig) != hunted_proc)
+	      {
+                 /*
+	          * The process is still alive and we don't need to
+                  * supervise it any more, detach the signal.
+                  */
+                 osegw_detach(ose_gw, &amp;hunted_proc);
+	      }
+	      osegw_free_buf(ose_gw, &amp;sig);
+	   }
+	}		
+      </pre>
+
+<h3 id="nonblock">3.5 Non-Blocking Receive Mode</h3>
+
+<p>Sometimes, clients not only have to wait for events from the Gateway, but
+also from other applications in the host operating system. It is also
+possible that a solution requires two Gateway clients to execute in the same
+thread. The non-blocking receive mode makes this possible through a number of
+calls. </p>
+
+<p>A native communication object is needed in order to be able to use native
+select or poll calls with the <code>OSEGW</code> object. This can be obtained
+by the following call: </p>
+<pre>	void * osegw_get_blocking_object(struct OSEGW *ose_gw, OSEGW_OSADDRESS *type);
+      </pre>
+
+<p>The return value is a pointer to a native communication object, and the
+type of the object, for example a native socket, can be obtained by the type
+argument. The type can be used to verify that the object returned is of the
+type expected. If no object is available for the channel, <code>NULL</code>
+is returned and <code>OSEGW_BO_UNAVAILABLE</code> is put into the type
+argument. </p>
+
+<p>To initialize the asynchronous receive, use the
+<code>osegw_init_async_receive</code> call: </p>
+<pre>	void osegw_init_async_receive(struct OSEGW *ose_gw, const OSEGW_SIGSELECT *sig_sel);
+      </pre>
+
+<p>This call registers a sigselect array in the client process in the
+gateway. When <code>osegw_init_async_receive</code> has been called, the
+client is not allowed to use <code>osegw_send</code>,
+<code>osegw_hunt</code>, <code>osegw_attach</code>,
+<code>osegw_detach</code>, <code>osegw_receive</code>, or
+<code>osegw_receive_w_tmo</code> calls. Calls that do not communicate with
+the gateway, such as <code>osegw_alloc</code>, still can be used. </p>
+
+<p>The asynchronous receive mode can be cancelled with
+<code>osegw_cancel_async_receive</code>. After this call, all Gateway API
+calls can be used again. If a signal was received before the asynchronous
+mode was cancelled, it is returned by this call. If no signal was received,
+the call returns <code>NULL</code>. The syntax for
+<code>osegw_cancel_async_receive</code> is: </p>
+<pre>	union OSEGW_SIGNAL *
+	osegw_cancel_async_receive(struct OSEGW *ose_gw);
+      </pre>
+
+<p>If a client native call, such as select or poll, has detected that the
+native communication object is readable, an osegw_async_receive call can be
+used to read the signal: </p>
+<pre>	union OSEGW_SIGNAL *
+	osegw_async_receive(struct OSEGW *ose_gw);
+      </pre>
+
+<p>If the <code>osegw_async_receive</code> call is used when the native
+communication object is not readable, the call will simply block until a
+signal is received. </p>
+
+<p>The listing below shows a complete example of two clients that execute in
+the same thread and are sending signals to each other using the asynchronous
+receive mode. </p>
+<pre>	#include &lt;sys/socket.h&gt;
+	#include &lt;stdio.h&gt;
+	#include "ose_gw.h"
+	    
+	#define OSEGW_ADDRESS "tcp://localhost:12357/"
+        #define LONG_TIME 1000000
+	
+	static const OSEGW_SIGSELECT any_sig[] = { 0 };
+
+	static void handle_error(void)
+	{
+	   exit(1);
+	}
+	
+	static OSEGW_PROCESS get_pid(struct OSEGW *gw)
+	{
+	   union OSEGW_SIGNAL *signal;
+	   OSEGW_PROCESS pid;
+
+	   signal = osegw_alloc(gw, 10, 0x01);
+	   pid = osegw_sender(gw, &amp;signal);
+	   osegw_free_buf(gw, &amp;signal);
+	   return pid;
+	}
+
+	static int get_max_value(int v1, int v2)
+	{
+	   if (v1 &gt; v2)
+	      return v1;
+	   else
+	      return v2;
+	}
+
+	int main(int argc, char *argv[])
+	{	
+	   struct OSEGW *gw_client1;
+	   struct OSEGW *gw_client2;
+	   union OSEGW_SIGNAL *signal;
+	   OSEGW_PROCESS pid_client1;
+	   OSEGW_PROCESS pid_client2;
+	   int sock_client1;
+	   int sock_client2;
+	   int max_val;
+	   int nr_signals_left;
+	   int rv;
+	   fd_set rfds;
+	
+	   /* Create the Clients */
+	   gw_client1 = osegw_create("client1", 0,
+                                     OSEGW_ADDRESS,
+                                     NULL, NULL, NULL);
+	   if (gw_client1 == NULL)
+	   {
+	      printf("*** ERROR *** Could not connect to OSE Gateway\n");
+              exit(1);
+           }
+	   gw_client2 = osegw_create("client2", 0,
+                                     OSEGW_ADDRESS,
+                                     NULL, NULL, NULL);
+	   if (gw_client2 == NULL)
+	   {
+	      printf("*** ERROR *** Could not connect to OSE Gateway\n");
+	      exit(1);
+	   }
+	
+	   pid_client1 = get_pid(gw_client1);
+	   pid_client2 = get_pid(gw_client2);
+	
+	   sock_client1 = *(int *)osegw_get_blocking_object(gw_client1, NULL);
+	   sock_client2 = *(int *)osegw_get_blocking_object(gw_client2, NULL);
+	
+	   /* Client1 sends signals to client 2 */
+	   signal = osegw_alloc(gw_client1, 10, 0x01);
+	   osegw_send(gw_client1, &amp;signal, pid_client2);
+	   signal = osegw_alloc(gw_client1, 10, 0x01);
+	
+	   osegw_send(gw_client1, &amp;signal, pid_client2);
+
+	   /* Client2 sends signals to client 1 */
+	   signal = osegw_alloc(gw_client2, 10, 0x01);
+           osegw_send(gw_client2, &amp;signal, pid_client1);
+	   signal = osegw_alloc(gw_client2, 10, 0x01);
+           osegw_send(gw_client2, &amp;signal, pid_client1);
+	
+           /* Start the asynchronous receive mode for both clients */
+           osegw_init_async_receive(gw_client1, any_sig);
+           osegw_init_async_receive(gw_client2, any_sig);
+	
+           /* Receive all four signals */
+	   nr_signals_left = 4;
+	   while (nr_signals_left &gt; 0)
+           {
+	      FD_ZERO(&amp;rfds);
+              FD_SET(sock_client1, &amp;rfds);
+              FD_SET(sock_client2, &amp;rfds);
+              max_val = get_max_value(sock_client1, sock_client2);
+
+	      rv = select(max_val + 1, &amp;rfds, NULL, NULL, NULL);
+              if (rv &lt;= 0)
+                 handle_error();
+              else
+              {
+                 if (FD_ISSET(sock_client1, &amp;rfds))
+                 {
+                    signal = osegw_async_receive(gw_client1);
+                    osegw_free_buf(gw_client1, &amp;signal);
+                    nr_signals_left--;
+                    osegw_init_async_receive(gw_client1, any_sig);
+                 }
+                 if (FD_ISSET(sock_client2, &amp;rfds))
+                 {
+                    signal = osegw_async_receive(gw_client2);
+                    osegw_free_buf(gw_client2, &amp;signal);
+                    nr_signals_left--;
+                    osegw_init_async_receive(gw_client2, any_sig);
+                 }
+              }
+           }
+
+	   /* Cancel async receive for both clients */
+           osegw_cancel_async_receive(gw_client1);
+           osegw_cancel_async_receive(gw_client2);
+
+	   /* Destroy both clients */
+           osegw_destroy(gw_client1);
+           osegw_destroy(gw_client2);
+           return 0;
+        }
+      </pre>
+
+<h3 id="error">3.6 Error Handling</h3>
+
+<p>The Gateway API supports two ways of handling errors. One uses a
+centralized error handler and the other uses function calls to check if an
+error has occurred. </p>
+
+<h4 id="usingerror">3.6.1 Using the Error Handler</h4>
+
+<p>The error handler is implemented by the user and must follow the type
+definition for <code>OSEGW_ERRORHANDLER</code> in the Gateway API. </p>
+<pre>	typedef OSEGW_BOOLEAN
+	OSEGW_ERRORHANDLER(struct OSEGW *ose_gw,
+	                   void *usr_hd,
+	                   OSEGW_ERRCODE ecode,
+                           OSEGW_ERRCODE extra);
+      </pre>
+
+<p>A pointer to the function is passed to the gateway object when the
+<code>osegw_create</code> function is called. </p>
+
+<p>The error handler is primarily used when all errors are considered fatal.
+In such cases, the error handler can simply print the error codes and
+terminate the program. This is usually a good strategy when a client is
+prototyped. One simple function handles the errors, and no checks have to be
+implemented after every call to the gateway API functions. If no error
+handler is implemented, the create call must use <code>NULL</code> as
+parameter value for the error handler. If a error handler is provided and
+something fails during the creation of the <code>OSEGW</code> object, the
+error handler is still called. The return value from
+<code>osegw_create</code> will be <code>NULL</code>. </p>
+
+<p>Example: Simple Client Prototype with the Error Handler </p>
+<pre>	#include &lt;stdio.h&gt;
+	#include "ose_gw.h"
+
+	/*
+	 * error_handler
+	 * =============
+	 *
+	 * An error handler. The types is defined in ose_gw.h.
+	 *
+	 */
+
+	
+	OSEGW_BOOLEAN
+	error_handler(struct OSEGW *ose_gw,
+	              void *usr_hdl,
+                      OSEGW_OSERRCODE ecode,
+                      OSEGW_OSERRCODE extra)
+        {
+	   fprintf(stderr, "An error occurred in OSE Gateway Client:"
+	                   "ERROR:%d EXTRA:%d\n", ecode, extra);
+	   exit(1);
+        }
+	
+        int
+        main(int argc, char **argv)
+        {
+           struct OSEGW gw_obj;
+
+	   /*  Check input argument */
+	   if (argc != 1)
+           {
+              printf("Syntax: %s IP-address:port\n"
+                     "Example: %s localhost:4000\n", argv[0], argv[0]);
+	      exit(1);
+           }
+	
+	   /*
+            * Establish a connection to the OSE Gateway and pass a
+            * pointer to the error handler.
+            */
+	   gw_obj = osegw_create("prototype",
+	                         argv[1],
+                                 error_handler,
+                                  NULL);
+
+	   for (;;)
+           {
+              ...
+           }
+	}
+      </pre>
+
+<h4 id="checkerror">3.6.2 Error Handling Using Checkup Calls</h4>
+
+<p>The second way to handle errors is more like traditional error handling in
+Unix and Windows. The gateway object stores an error code internally when an
+error occurs. This code can be reset and fetched by the
+<code>osegw_reset_error</code> and <code>osegw_get_error</code> calls. </p>
+<pre>	OSEGW_OSERRCODE osegw_get_error(struct OSEGW *ose_gw);
+	void osegw_reset_error(struct OSEGW *ose_gw);
+      </pre>
+
+<p>The error is reset when a connection is established, so there is no need
+to reset the error just after a call to the <code>osegw_create</code>. If
+something fails during create, <code>NULL</code> is returned, and these error
+handling functions can not be used. </p>
+
+<p>The code is not automatically reset after a successful call. This mean the
+code will describe the latest error, if any, if several calls to the gateway
+API are made without resetting the error between them. </p>
+
+<p>Example - How to Use <code>osegw_get_error</code> and
+<code>osegw_reset_error</code> </p>
+<pre>	#include &lt;stdio.h&rt;
+	#include "ose_gw.h"
+
+	int
+	main(int argc, char **argv)
+	{
+	   struct OSEGW *gw_obj;
+	   OSEGW_PROCESS pid;
+
+	   /* Check input argument */
+	   if (argc != 1)
+           {
+	      printf("Syntax: %s IP-address:port\n"
+	             "Example: %s localhost:4000\n", argv[0], argv[0]);
+              exit(1);
+           }
+	
+           /*
+            * Establish a connection to the OSE Gateway, no error handler
+            * is used.
+            */
+           gw_obj = osegw_create("example_client",
+	                         0,
+                                 argv[1],
+                                 NULL, NULL, NULL);
+	   if (gw_obj == NULL)
+           {
+              /*
+               * The error handling function can not be used here
+               * because there is no object to use them on.
+               */
+	      printf("Error establishing connection to OSE Gateway "
+                     "at location: %s\n", argv[1]);
+              exit(1);
+           }
+	   (void)osegw_hunt(gw_obj, "target_proc", &amp;pid, NULL);
+
+	   if (osegw_get_error(gw_obj) != OSEGW_OK)
+           {
+              printf("Error hunting for example_client\n");
+              osegw_reset_error(gw_target);
+           }
+	
+           ...
+	}
+      </pre>
+
+<h2 id="findgw">4. Find Gateway</h2>
+
+<p>The find gateway feature makes it easy for clients to find gateways on a
+local network. The <code>osegw_find_gw</code> call broadcasts a message and a
+gateway that receives the message replies with its address and name. The name
+is specified in the gateway configuration file, see <a href="#conffile">2.3
+Configuration File</a>. The address can be used by the
+<code>osegw_create</code> call to establish a connection to the gateway. </p>
+
+<p>If the client already knows the address to the gateway, using this
+functionality might be unnecessary. </p>
+
+<p>The broadcast is handled by the <code>osegw_find_gw</code> call. The user
+must implement a function following the <code>OSEGW_FOUND_GW</code> type
+definition, and pass a pointer to it to the <code>osegw_find_gw</code>
+function. </p>
+<pre>	typedef OSEGW_BOOLEAN
+	(*OSEGW_FOUND_GW)(void *usr_hd,
+	                  const char *host_address,
+	                  const char *name);
+      </pre>
+
+<p>See <a href="#conffile">2.3 Configuration File</a> that demonstrates an
+example of how to use the <code>osegw_find_gw</code> call to create a
+function that establishes a connection to an gateway by passing the name, as
+specified in the gateway configuration file, of the gateway instead of the
+address. </p>
+
+<p>Another use for this functionality is appropriate when the client has some
+kind of GUI. All gateways can be stored by the <code>OSEGW_FOUND_GW</code>
+function and presented in a list, for example, from which users can select
+the gateways to which they want to connect. </p>
+
+<p>Example: Broadcast </p>
+<pre>	#include &lt;string.h&gt;
+	#include "ose_gw.h"
+	
+	#define BROADCAST_ADDRESS "255.255.255.0"
+	#define MAX_HOST_ADDRESS_LEN 64
+	#define TIMEOUT 3000
+
+	struct GW_DATA_OBJ
+	{
+	   char const *gw_name;
+	   char const
+	   host_address[MAX_HOST_ADDRESS_LEN];
+	};
+	
+	OSBOOLEAN
+	find_gw_by_name(void *user_hd,
+	                char const *host_address,
+	                char const *name)
+	{
+           struct GW_DATA_OBJ *obj = (struct GW_DATA_OBJ *)user_hd;
+           if (strcmp(name, obj-&gt;gw_name) ==0)
+           {
+              strncpy(obj-&gt;host_address,
+                      host_address,
+                      MAX_HOST_ADDRESS_LEN);
+              return OSEGW_TRUE;
+           }
+           return OSEGW_FALSE;
+        }
+	
+        struct OSEGW *
+        create_by_gateway_name(char *client_name,
+                               char *gateway_name,
+                               OSEGW_ERRORHANDLER err_hdl,
+                               void *user_handle)
+	{
+	   struct OSEGW *gw_obj;
+	   struct GW_DATA_OBJ gw_data;
+	   OSEGW_BOOLEAN rv;
+	
+           /* Try to find a gateway named 'gateway_name' */
+           gw_data.gw_name = gateway_name;
+           rv = osegw_find_gw(BROADCAST_ADDRESS,
+                              TIMEOUT, find_gw_by_name, (void *)&amp;gw_data);
+
+	   if(!rv)
+           {
+              /* No Gateway with the specified name found */
+              return NULL;
+           }
+           else
+           {
+              /* Gateway found, connect to it */
+              gw_obj = osegw_create(client_name,
+                                    gw_data.host_address,
+                                    errHdl, user_handle);
+           }
+           return gw_obj;
+        }
+
+	int
+	main(int argc, char **argv)
+	{
+	   struct OSEGW gw_obj;
+	   OSEGW_PROCESS pid;
+
+	   /*
+            * Check input argument
+            */
+           if (argc != 1)
+           {
+              printf("Syntax: %s 'Name of an OSE Gateway'\n"
+                     "Example: %s DSP.XX.X\n", argv[0], argv[0]);
+              exit(1);
+           }
+
+	   /*
+            * Establish a connection to the OSE Gateway, no error handle
+            * is used.
+            */
+           gw_obj = create_by_gateway_name("prototype",
+                                           argv[1],
+                                           NULL,
+                                           NULL);
+           if (gw_obj == NULL)
+           {
+              printf("Error establishing connection to OSE Gateway "
+                     "with name: %s\n", argv[1]);
+              exit(1);
+           }
+
+	   ...
+        }
+      </pre>
+
+<h2 id="linxgwcmd">5. linxgwcmd - A Gateway Command Tool</h2>
+
+<p>The <code>linxgwcmd</code> tool can be used to find and test Gateway
+servers on a network. The following command line options exist: </p>
+
+<table border="0">
+  <tbody>
+    <tr>
+      <td width="200"><strong>-a &lt;auth&gt;</strong></td>
+      <td>Use auth as authentication string, which should be in "user:passwd"
+        form </td>
+    </tr>
+    <tr>
+      <td><strong>-b &lt;brc_addr&gt;</strong></td>
+      <td>Use brc_addr as broadcast string, which should be in "udp://*:port"
+        form, where "port" should be the port number. Default broadcast
+        string is "udp://*:21768" </td>
+    </tr>
+    <tr>
+      <td><strong>-c &lt;name&gt;</strong></td>
+      <td>Use name as the client's name (default "gw_client")</td>
+    </tr>
+    <tr>
+      <td><strong>-e[&lt;n&gt;][,&lt;b&gt;]</strong></td>
+      <td>Echo test to an OSE Gateway use <code>n</code> as number of loops
+        (default 10) and <code>b</code> for number of bytes/chunk (default
+        4). </td>
+    </tr>
+    <tr>
+      <td><strong>-h</strong></td>
+      <td>Print this usage message.</td>
+    </tr>
+    <tr>
+      <td><strong>-l[&lt;t&gt;][,&lt;n&gt;]</strong></td>
+      <td>List Gateway servers. Use <code>t</code> as timeout value (default
+        is 5 secs) and <code>n</code> for max items (default lists all).
+        <code>linxgwcmd -l25,1</code> =&gt; look for Gateways in 25 secs and
+        list only the first found. </td>
+    </tr>
+    <tr>
+      <td><strong>-p &lt;proc&gt;</strong></td>
+      <td>Hunt for process "proc".</td>
+    </tr>
+    <tr>
+      <td><strong>-s &lt;url/name&gt;</strong></td>
+      <td>Connect to a OSE Gateway server using either the servers URL or its
+        name. </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,196 @@
+diff -crBN old/wireshark-1.0.6/epan/dissectors/Makefile.common new/wireshark-1.0.6/epan/dissectors/Makefile.common
+*** old/wireshark-1.0.6/epan/dissectors/Makefile.common	2009-03-23 14:09:22.992000000 +0100
+--- new/wireshark-1.0.6/epan/dissectors/Makefile.common	2009-03-23 14:23:03.886000000 +0100
+***************
+*** 514,519 ****
+--- 514,520 ----
+  	packet-ldp.c		\
+  	packet-lge_monitor.c	\
+  	packet-linx.c		\
++ 	packet-linx-internal.c  \
+  	packet-llc.c		\
+  	packet-lldp.c		\
+  	packet-llt.c		\
+diff -crBN old/wireshark-1.0.6/epan/dissectors/packet-linx-internal.c new/wireshark-1.0.6/epan/dissectors/packet-linx-internal.c
+*** old/wireshark-1.0.6/epan/dissectors/packet-linx-internal.c	1970-01-01 01:00:00.000000000 +0100
+--- new/wireshark-1.0.6/epan/dissectors/packet-linx-internal.c	2009-03-23 14:25:07.275000000 +0100
+***************
+*** 0 ****
+--- 1,177 ----
++ /* packet-linx-internal.c
++  * Routines for LINX internal messages packet dissection
++  *
++  * Copyright 2008, Enea Software AB <linx@enea.com>
++  *
++  * Wireshark - Network traffic analyzer
++  * By Gerald Combs <gerald@wireshark.org>
++  * Copyright 1998 Gerald Combs
++  *
++  * This program is free software; you can redistribute it and/or
++  * modify it under the terms of the GNU General Public License
++  * as published by the Free Software Foundation; either version 2
++  * of the License, or (at your option) any later version.
++  *
++  * This program is distributed in the hope that it will be useful,
++  * but WITHOUT ANY WARRANTY; without even the implied warranty of
++  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  * GNU General Public License for more details.
++  *
++  * You should have received a copy of the GNU General Public License
++  * along with this program; if not, write to the Free Software
++  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
++  */
++ 
++ #ifdef HAVE_CONFIG_H
++ # include "config.h"
++ #endif
++ 
++ #include <epan/packet.h>
++ #include <epan/etypes.h>
++ 
++ #include <sys/types.h>
++ #include <sys/socket.h>
++ #include <sys/ioctl.h>
++ #include <unistd.h>
++ 
++ static void dissect_linx_int(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree);
++ 
++ static int hf_linx_int_src_spid = -1;
++ static int hf_linx_int_dst_spid = -1;
++ static int hf_linx_int_len = -1;
++ static int hf_linx_int_padding = -1;
++ static int hf_linx_int_signo = -1;
++ 
++ static gint ett_linx_int = -1;
++ 
++ static int proto_linx_int = -1;
++ 
++ #define LINX_MAX_STR_LEN 100
++ 
++ static int linx_sd = -1;
++ 
++ void
++ open_linx_socket(void)
++ {
++    if((linx_sd = socket(29, SOCK_DGRAM, 0)) != -1) {
++       struct { uint32_t s; size_t l; char *n; } lhn = { 0, 9, "wireshark" };
++       if(ioctl(linx_sd, _IOWR(0xF4, 8, typeof(lhn)), &lhn) == -1) {
++ 	 close(linx_sd);
++ 	 linx_sd = -1;
++       }
++    }
++ }
++ 
++ int
++ linx_socket_getname(uint32_t spid, char *buff, int len)
++ {
++    struct { uint32_t s; int l; char *n; } lin = { spid, len, buff };
++    struct { int t; void *ts; } li = { 2, &lin };
++    return ioctl(linx_sd, _IOWR(0xF4, 7, typeof(li)), &li);
++ }
++ 
++ static void
++ dissect_linx_int(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree)
++ {
++   guint32 src_spid, dst_spid, size, signo;
++   static char src [LINX_MAX_STR_LEN];
++   static char dst [LINX_MAX_STR_LEN];
++   char name[100];
++   proto_item *ti        = NULL;
++   proto_tree *linx_int_tree = NULL;
++   
++   if (check_col(pinfo->cinfo, COL_PROTOCOL))
++     col_set_str(pinfo->cinfo, COL_PROTOCOL, "Linx internal");
++   
++   if (check_col(pinfo->cinfo, COL_INFO))
++     col_clear(pinfo->cinfo, COL_INFO);
++ 
++   /* tvb_get_ntohl is(?) the most appropriate function to 
++    * fetch the u32 integers but the ntohl is unnecessary
++    * so all vals must be reset with g_htonl */
++   src_spid = g_htonl(tvb_get_ntohl(tvb, 0));    
++   dst_spid = g_htonl(tvb_get_ntohl(tvb, 4));
++ 
++   if(linx_sd != -1 && linx_socket_getname(src_spid, name, 100) != -1) {
++      snprintf(src, LINX_MAX_STR_LEN, "%s (0x%x)", name, src_spid);
++   } else {
++      snprintf(src, LINX_MAX_STR_LEN, "0x%x", src_spid);
++   }
++ 
++   if(linx_sd != -1 && linx_socket_getname(dst_spid, name, 100) != -1) {
++      snprintf(dst, LINX_MAX_STR_LEN, "%s (0x%x)", name, dst_spid);
++   } else {
++      snprintf(dst, LINX_MAX_STR_LEN, "0x%x", src_spid);
++   }
++ 
++   /* Fill in Source column */
++   SET_ADDRESS(&pinfo->dl_src, AT_STRINGZ, 4, src);
++   SET_ADDRESS(&pinfo->src, AT_STRINGZ, 4, src);
++ 
++   /* Fill in Destination column */
++   SET_ADDRESS(&pinfo->dl_dst, AT_STRINGZ, 4, dst);
++   SET_ADDRESS(&pinfo->dst, AT_STRINGZ, 4, dst);
++ 
++   /* Fill in Info column */
++   size = g_htonl(tvb_get_ntohl(tvb, 8));
++   signo = g_htonl(tvb_get_ntohl(tvb, 16));
++   if(check_col(pinfo->cinfo, COL_PROTOCOL))
++     col_append_fstr(pinfo->cinfo, COL_INFO, "signo:0x%x size:%d", signo, size);
++ 
++   /* Build tree */
++   ti = proto_tree_add_item(tree, proto_linx_int, tvb, 0, -1, FALSE);
++   linx_int_tree = proto_item_add_subtree(ti, ett_linx_int);
++   proto_tree_add_item(linx_int_tree, hf_linx_int_src_spid, tvb, 0, 4, TRUE);
++   proto_tree_add_item(linx_int_tree, hf_linx_int_dst_spid, tvb, 4, 4, TRUE);
++   proto_tree_add_item(linx_int_tree, hf_linx_int_len, tvb, 8, 4, TRUE);
++   proto_tree_add_item(linx_int_tree, hf_linx_int_padding, tvb, 12, 4, TRUE);
++   proto_tree_add_item(linx_int_tree, hf_linx_int_signo, tvb, 16, 4, TRUE);
++   proto_tree_add_text(linx_int_tree, tvb, 20, size - 4, "%u bytes data", size - 4);
++ }
++ 
++ /* Protocol Initialisation */
++ void
++ proto_register_linx_int(void)
++ {
++   static hf_register_info hf[] = {
++     { &hf_linx_int_src_spid,
++       { "Src spid", "linx_int.src_spid", FT_UINT32, BASE_HEX, NULL, 0xffffffff, "Source LINX Spid", HFILL },
++     },
++     { &hf_linx_int_dst_spid,
++       { "Dst spid", "linx_int.dst_spid", FT_UINT32, BASE_HEX, NULL, 0xffffffff, "Destination LINX Spid", HFILL },
++     },
++     { &hf_linx_int_len,
++       { "Length", "linx_int.len", FT_UINT32, BASE_DEC, NULL, 0xffffffff, "Data length (incl signo)", HFILL },
++     },
++     { &hf_linx_int_padding,
++       { "Padding", "linx_int.padding", FT_UINT32, BASE_HEX, NULL, 0xffffffff, "Padding bytes", HFILL },
++     },
++     { &hf_linx_int_signo,
++       { "Signo", "linx_int.signo", FT_UINT32, BASE_HEX, NULL, 0xffffffff, "Signal number", HFILL },
++     },
++   };
++   
++   /* Setup protocol subtree array */
++   static gint *ett[] = {
++     &ett_linx_int
++   };
++  
++   if (proto_linx_int == -1) {
++     proto_linx_int = proto_register_protocol ("Enea LINX", /* name */
++ 					      "LINX Internal",      /* short name */
++ 					      "linx_int"       /* abbrev */
++ 					      );
++   }
++ 
++   /* Protocol Registering data structures. */
++   proto_register_field_array(proto_linx_int, hf, array_length(hf));
++   proto_register_subtree_array(ett, array_length(ett));
++ }
++ 
++ /* Protocol Handoff */
++ void
++ proto_reg_handoff_linx_int(void)
++ {
++    open_linx_socket();
++    register_dissector("linx_int", dissect_linx_int, proto_linx_int);
++ }

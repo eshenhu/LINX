@@ -1,0 +1,239 @@
+README
+
+Enea LINX for Linux
+
+See RELEASE_NOTES for the current LINX version!
+
+  1. Introduction
+  2. Description and Main Features
+  3. Licenses
+  4. Documentation
+  5. Contacts
+  6. Build Instructions
+  7. Example: Start using LINX
+  8. Trademarks
+
+
+1. Introduction
+
+Enea LINX is an open technology for distributed system interprocess
+communication which is platform and interconnect independent, scales
+well to large systems with any topology, but that still has the
+performance needed for high traffic bearing components of the
+system. It is based on a well known transparent message passing method
+that have been used for many years in OSE family of real time operating
+systems.
+
+LINX for Linux is the Linux implementation of the Enea LINX, and includes 
+the LINX kernel modules, the user-space LINX API library and tools for 
+configuring and supervising inter-node communication using LINX.
+
+
+2. Description and Main Features
+
+The LINX kernel module implements the LINX protocol which has two
+layers - the RLNH protocol and the Connection Manager protocol. The
+RLNH protocol corresponds to the session layer in the OSI model and
+implements IPC functions including methods to look up endpoints by
+name and to supervise them to get asynchronous notifications if they
+disappear. The Connection Manager layer corresponds to the transport
+layer in the OSI model and implements reliable in order transmission
+of arbitrarily sized messages over any media.  LINX is accessed from
+user land through a new address family AF_LINX and standard BSD
+sockets.
+
+The LINX API library implements the Enea LINX message passing API.
+The API is based on Enea's well know OSE distributed messaging API and
+contains a full set of functions for sending and receiving messages,
+lookup endpoints, request notification when endpoints disappears.
+Although it is possible to write LINX application using only the
+socket interface published by the kernel module the powerful
+abstractions provided by the LINX API makes applications much easier
+to write and maintain.
+
+LINX contains tools to create and destroy connections to other hosts
+and a daemon that can be used to automatically establish connections
+to a group of LINX hosts in a network. Linxcfg creates and destroys
+connections to other hosts.  Linxstat displays information about
+LINX-connections and programs using LINX in a format similar to
+netstat.  Linxdisc is a daemon which can discover other LINX nodes in
+a network and automatically establish LINX connections.
+
+The LINX release contains two example programs, a benchmark
+application that can be used to test performance of LINX and a simple
+application demonstrating many features of LINX messaging API.
+
+
+3. Licenses
+
+The LINX for Linux source code is released under a dual BSD / GPLv2
+licence.
+
+* The LINX kernel module is OS-specific, released under GPLv2 for Linux.
+
+* The LINX generic protocol layer is released under a BSD licence.
+
+* The LINX library is released under BSD licence.
+
+See the file COPYING for the GPLv2 licence.
+
+
+4. Documentation
+
+* README        This file
+
+* RELEASE_NOTES Version information, supported platform and known
+                limitations.
+
+* Changelog     Change history.
+
+* index.html    Index to reach all documentation.
+
+* UsersGuide_LINX_for_Linux.html
+                Description and getting started information.
+
+* MAN-pages     Reference documentation of the LINX protocol, the
+                LINX API, and the LINX tools. 
+                In order to read these man-pages use the command:
+                MANPATH=/path/to/linx/doc man <man page>
+                
+                The MAN pages are also available, converted
+                to HTML and PDF.
+
+* README        README-files in each example directory.
+
+
+5. Contacts
+
+www.enea.com
+
+linx@enea.com
+
+
+6. Build Instructions
+
+See the User's Guide for instructions.
+ 
+In short, to build LINX API lib and tools self hosted, go to the top LINX
+directory, do ./configure and then make.
+
+$ cd /path/to/linx
+$ ./configure
+$ make
+
+
+For cross compiling, set the PATH to include your cross development toolkit and
+pass run the configure script with the --host parameter set to your target
+architecture.
+
+$ cd /path/to/linx
+$ export PATH=/path/to/toolkit:$PATH
+$ ./configure --host=<target architecure>
+$ make
+
+This creates the tool binaries located in the /path/to/linx/bin directory, the
+LINX API libraries, the example as well as the LINX Benchmark suite.
+
+The LINX kernel modules are built separetely.
+
+$ cd /path/to/linx
+$ cd net/linx
+$ make
+
+This creates the kernel modules linx.ko, linx_eth_cm.ko, linx_tcp_cm.ko,
+linx_rio_cm.ko, linx_shm_cm.ko and linx_cmcl.ko (located in
+/path/to/linx/net/linx/).
+
+For cross compiling, fist set a few environment variables or update
+config.mk and set the PATH to include your cross development toolkit:
+
+* ARCH            - target architecture, e.g. ppc
+* CROSS_COMPILE   - cross tools prefix, e.g. powerpc-linux-
+* KERNEL          - kernel source tree
+
+6.1 Kernel bug workarounds
+
+In order to workaround specific kernel bugs, a set of defines are 
+available to patch the LINX code. The workarounds are enabled by defining
+build time variables.
+
+* LINX_KERNEL_WORKAROUND_1      Vanilla kernels earlier than 2.6.12 have a 
+                                bug in the rwsemaphore handling. The problem 
+                                is that irqs are not enabled and disabled 
+                                correctly when using the rwsem interface.
+                                When LINX_KERNEL_WORKAROUND_1 is defined, 
+                                extra irq handling is added. Many distributions,
+                                such as Red hat, Centos etc. have patches
+                                that fix this problem.
+                                $ make LINX_KERNEL_WORKAROUND_1=yes
+
+
+7. Example: Start using LINX
+
+See the User's Guide how to start using LINX.
+
+Below is a very short summary how to install, build and start using LINX
+on two Linux hosts; HostA and HostB. Note that to be able to build the LINX
+kernel module, headers matching the running kernel must be installed.
+
+On HostA untar the LINX archive in some suitable place:
+$ tar xzf linx-ver.tar.gz
+
+Go to the linx directory, build LINX API lib and tools:
+$ cd /path/to/linx
+$ ./configure
+$ make
+$ export PATH=${PATH}:/path/to/linx/bin
+
+Go to the linx kernel modules directory, build the kernel modules:
+$ cd /path/to/linx/net/linx
+$ make
+
+Load the LINX kernel module into your kernel.  Note that you need root
+permission to install the kernel module.
+$ cd /path/to/linx
+$ sudo insmod net/linx/linx.ko
+
+Insert the Ethernet CM:
+$ sudo insmod net/linx/linx_eth_cm.ko
+
+Create a connection to the remote system B
+$ mkethcon -i eth0 -m 0b:0b:0b:0b:0b:0b econ_b
+$ mklink -c ethcm/econ_b elink_b
+
+Do the same on host B, unpack, build, and install kernel module. Finally
+create a connection to A:
+$ mkethcon -i eth0 -m 0a:0a:0a:0a:0a:0a econ_a
+$ mklink -c ethcm/econ_a elink_a
+
+Now applications can send messages over the link.
+
+To use the TCP CM, insert the corresponding CM kernel module:
+$ sudo insmod net/linx/linx_tcp_cm.ko
+
+Notice that many CMs can coexist at the same time.
+
+On host A create a connection to the remote host:
+$ mktcpcon -i 192.168.1.B tcon_b
+$ mklink -c tcpcm/tcon_b tlink_b
+
+Do the same on host B:
+$ mktcpcon -i 192.168.1.A tcon_a
+$ mklink -c tcpcm/tcon_a tlink_a
+
+The applications can use the link.
+
+The current available links can be seen with the linxstat command:
+$ linxstat
+
+
+8. Trademarks
+
+LINX, OSE, OSEck are registered trademarks of Enea Software AB.
+Linux is a registered trademark of Linus Torvalds.
+PowerPC is a registered trademark of IBM Corporation.
+i386 is a registered trademark of Intel Corporation.
+All other trademarks, trade names or copyrights used
+in files in the LINX distribution are the property
+of their respective owners and are used for identification
+purposes only.

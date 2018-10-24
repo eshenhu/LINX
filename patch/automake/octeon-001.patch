@@ -1,0 +1,23 @@
+diff -rcN o/linx-2.5.0/config.sub n/linx-2.5.0/config.sub
+*** o/linx-2.5.0/config.sub	2011-05-16 09:44:32.000000000 +0200
+--- n/linx-2.5.0/config.sub	2011-06-21 21:50:41.000000000 +0200
+***************
+*** 243,248 ****
+--- 243,249 ----
+  	| mips | mipsbe | mipseb | mipsel | mipsle \
+  	| mips16 \
+  	| mips64 | mips64el \
++ 	| mips64octeon | mips64octeonel \
+  	| mips64vr | mips64vrel \
+  	| mips64orion | mips64orionel \
+  	| mips64vr4100 | mips64vr4100el \
+***************
+*** 322,327 ****
+--- 323,329 ----
+  	| mips-* | mipsbe-* | mipseb-* | mipsel-* | mipsle-* \
+  	| mips16-* \
+  	| mips64-* | mips64el-* \
++ 	| mips64octeon-* | mips64octeonel-* \
+  	| mips64vr-* | mips64vrel-* \
+  	| mips64orion-* | mips64orionel-* \
+  	| mips64vr4100-* | mips64vr4100el-* \

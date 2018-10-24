@@ -1,0 +1,1470 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>LINX User's Guide - Document v2.2.1</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta name="description"
+  content="LINX, Open IPC Protocol for heterogeneous distributed systems" />
+  <meta name="keywords" content="LINX, OSE, Enea" />
+  <style type="text/css">
+ .pagebreak {page-break-before:always}
+ body { margin-left:1cm;  font-size:90%;}
+ .exptab {margin-top:0; margin-bottom:0; font-size:90%; text-align:left; } </style>
+</head>
+
+<body>
+<a name="top" id="top"></a> 
+
+<h1>LINX for Linux User's Guide</h1>
+
+<div class="toc">
+<ul>
+  <li><a href="#linx_overview">1. LINX Overview</a>
+    <ul>
+      <li><a href="#introduction">1.1 Introduction</a></li>
+      <li><a href="#concepts">1.2 LINX Concepts</a></li>
+    </ul>
+  </li>
+  <li><a href="#installation">2. Installation</a></li>
+  <li><a href="#building">3. Building LINX</a></li>
+  <li><a href="#using_linx">4. Using LINX</a>
+    <ul>
+      <li><a href="#linx_endpoints">4.1 LINX Endpoints</a></li>
+      <li><a href="#linx_signals">4.2 LINX Signals</a></li>
+      <li><a href="#hunting">4.3 Hunting for an Endpoint</a></li>
+      <li><a href="#attaching">4.4 Attaching to an Endpoint</a></li>
+      <li><a href="#inter-node">4.5 Inter-node Communication</a></li>
+      <li><a href="#virtual_endpoints">4.6 Virtual Endpoints</a></li>
+      <li><a href="#out_of_band">4.7 Out-of-band signalling</a></li>
+    </ul>
+  </li>
+  <li><a href="#getting_started">5. Getting Started</a>
+    <ul>
+      <li><a href="#loading">5.1 Loading the LINX Kernel Modules</a></li>
+      <li><a href="#creating_links">5.2 Creating Links</a>
+        <ul>
+          <li><a href="#normal_links">5.2.1 Normal case - one link over one
+            connection</a></li>
+          <li><a href="#oob_links">5.2.2 Out-of-band - one link over two
+            connections</a></li>
+        </ul>
+      </li>
+      <li><a href="#running_example">5.3 Running the LINX Example
+        Application</a></li>
+    </ul>
+  </li>
+  <li><a href="#utilities">6. LINX Utilities</a>
+    <ul>
+      <li><a href="#mklink">6.1 mklink</a></li>
+      <li><a href="#rmlink">6.2 rmlink</a></li>
+      <li><a href="#mkethcon">6.3 mkethcon</a></li>
+      <li><a href="#rmethcon">6.4 rmethcon</a></li>
+      <li><a href="#mkshmcon">6.5 mkshmcon</a></li>
+      <li><a href="#rmshmcon">6.6 rmshmcon</a></li>
+      <li><a href="#mktcpcon">6.7 mktcpcon</a></li>
+      <li><a href="#rmtcpcon">6.8 rmtcpcon</a></li>
+      <li><a href="#L1927">6.9 mkriocon</a></li>
+      <li><a href="#L2305">6.10 rmriocon</a></li>
+      <li><a href="#L2314">6.11 mkcmclcon</a></li>
+      <li><a href="#L2323">6.12 rmcmclcon</a></li>
+      <li><a href="#linxdisc">6.13 linxdisc</a></li>
+      <li><a href="#linxstat">6.14 linxstat</a></li>
+      <li><a href="#linxgws">6.15 linxgws</a></li>
+      <li><a href="#linxgwcmd">6.16 linxgwcmd</a></li>
+      <li><a href="#message_trace">6.17 LINX Message Trace</a></li>
+    </ul>
+  </li>
+  <li><a href="#configuration">7. LINX Kernel Module Configuration</a></li>
+  <li><a href="#statistics">8. LINX Statistics</a>
+    <ul>
+      <li><a href="#per-endpoint_stat">8.1 Per-endpoint Statistics</a></li>
+      <li><a href="#ethernet_cm_stat">8.2 Ethernet CM Statistics</a></li>
+    </ul>
+  </li>
+  <li><a href="#more_information">9. Where to Find More Information</a>
+    <ul>
+      <li><a href="#reference_doc">9.1 Reference Documentation </a></li>
+      <li><a href="#linx_protocols">9.2 LINX Protocols</a></li>
+      <li><a href="#linx_project">9.3 The LINX Project</a></li>
+      <li><a href="#other_information">9.4 Other Information</a></li>
+    </ul>
+  </li>
+</ul>
+</div>
+<!-- A comment! This file has been adjusted with auto-creation
+of the table of contents in Amaya 9.55 -->
+
+<p>Document version: 2.2.1</p>
+
+<p style="margin-left:10pt;margin-right:10pt;font-size:80%;"><i>Copyright ©
+Enea Software AB 2006-2009. <br />
+<br />
+Enea®, Enea OSE®, and Polyhedra® are the registered trademarks of Enea AB and
+its subsidiaries. Enea OSE®ck, Enea OSE® Epsilon, Enea® Element, Enea® Optima,
+Enea® LINX, Enea® Accelerator, Polyhedra® FlashLite, Enea® dSPEED, Accelerating
+Network Convergence&trade;, Device Software Optimized&trade;, and Embedded for
+Leaders&trade; are unregistered trademarks of Enea AB or its subsidiaries.
+Linux is a registered trademark of Linus Torvalds. Any other company, product
+or service names mentioned in this document are the registered or unregistered
+trademarks of their respective owner.<br />
+The source code included in LINX for Linux is released partly under the GPL
+(see COPYING file) and partly under a BSD type license - see license text in
+each source file. </i></p>
+
+<p style="margin-left:10pt;margin-right:10pt;font-size:80%;"><i>Disclaimer: The
+information in this document is subject to change without notice and should not
+be construed as a commitment by Enea Software AB.</i></p>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="linx_overview">1. LINX Overview</h2>
+
+<h3 id="introduction">1.1 Introduction</h3>
+
+<p>LINX is an open inter-process communications (IPC) protocol, designed to be
+platform and interconnect independent. It enables applications to communicate
+transparently regardless of whether they are running on the same CPU or are
+located on different nodes in a cluster. Any type of cluster configuration is
+supported, from a single multi-core board to large systems with many nodes
+interconnected by any network topology. LINX is based on the traditional
+message passing technology used in the Enea OSE / OSEck family of real-time
+operating systems.</p>
+
+<p>LINX consists of a set of Linux kernel modules, a LINX library to be linked
+with applications and a few command tools for configuration of inter-node links
+and statistics reports.</p>
+
+<p>There is one main LINX kernel module that implements the IPC mechanisms and
+the Rapid Link Handler (RLNH) protocol, which allows LINX functionality to span
+multiple nodes transparently over logical links. To use LINX for inter-node
+communication, a Connection Manager (CM) kernel module that supports the
+underlying interconnect must be loaded as well. Currently, LINX contains two
+CMs, one for raw Ethernet and one for TCP/IP. The CM is located below the main
+LINX kernel module in the protocol stack and its main task is to provide
+reliable, in-order delivery of messages. LINX can be adapted to any underlying
+transport by adding new CMs.</p>
+
+<p>The RLNH protocol and the CM protocols are specified in a separate document
+(see section <a href="#linx_protocols">9.2</a>) .</p>
+
+<p>The LINX kernel module provides a standard socket based interface using its
+own protocol family, <code>PF_LINX</code>. </p>
+
+<p>The LINX library provides a set of function calls to applications.
+Application programmers should normally use the LINX API provided by this
+library, but it is possible to use the underlying socket interface too if
+necessary. Information on how to use the socket interface directly is found in
+the LINX reference documentation.</p>
+
+<p></p>
+
+<h3 id="concepts">1.2 LINX Concepts</h3>
+
+<table border="0">
+  <tbody>
+    <tr>
+      <td valign="top" width="150"><strong>Endpoint</strong></td>
+      <td valign="top">An endpoint is an entity which can participate in LINX
+        communication. Each endpoint is assigned a name by the application
+        creating it.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>SPID</strong></td>
+      <td valign="top">A binary identifier assigned to each endpoint by LINX.
+        The SPID is used to refer to an endpoint when communicating with
+      it.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>LINX Signal</strong></td>
+      <td valign="top">Endpoints communicate by exchanging messages called LINX
+        signals. When sending a LINX signal, the application specifies the SPID
+        of the destination endpoint.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>Connection</strong></td>
+      <td valign="top">A LINX connection provides reliable, in-order delivery
+        of LINX data between two nodes over an underlying media or protocol
+        stack.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>Connection Manager</strong></td>
+      <td valign="top">A LINX component that implements support for setting up
+        connections over a particular type of interconnect.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>Link</strong></td>
+      <td valign="top">A logical association between two LINX nodes. Each link
+        uses an underlying connection as transport. LINX IPC services are
+        transparent across links.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>Hunting</strong></td>
+      <td valign="top">A LINX mechanism that allows applications to look up the
+        SPID of an endpoint by name. A LINX signal is sent back to the
+        application when a matching endpoint is found or created. Applications
+        can search for endpoints on remote nodes by specifying a path of links
+        to traverse.</td>
+    </tr>
+    <tr>
+      <td valign="top"><strong>Attaching</strong></td>
+      <td valign="top">A LINX mechanism that allows application to supervise
+        endpoints in order to find out when they are terminated. A LINX signal
+        is sent back to the application when the supervised endpoint is
+        terminated.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="installation">2. Installation</h2>
+
+<p>Download the LINX distribution <code>linx-n.n.n.tar.gz</code>, where n.n.n
+is the LINX version. See section <a href="#linx_project">9.3</a> for
+information on where to download LINX. Extract the contents of the archive at a
+suitable place in your Linux system:</p>
+<pre>   $ tar &ndash;zxvf linx-n.n.n.tar.gz</pre>
+
+<p>This creates a LINX directory called <code>linx-n.n.n/</code>. The file
+<code>linx-n.n.n/doc/index.html</code> contains pointers to all documentation
+available in the release. Make sure to read the <code>README</code>,
+<code>RELEASE_NOTES</code> and <code>Changelog</code> files for information
+about this version. Reference documentation is available as man pages and in
+HTML format. There is also a document describing the LINX protocols.</p>
+
+<p>The following is found under the top level LINX directory:</p>
+
+<table border="0">
+  <tbody>
+    <tr>
+      <td valign="top" width="250"><code>Makefile</code>,
+        <code>config.mk</code>, <code>common.mk</code></td>
+      <td valign="top">Make files for building LINX</td>
+    </tr>
+    <tr>
+      <td valign="top" width="250"><code>COPYING</code>, <code>MANIFEST</code>,
+        <code>README</code>, <code>RELEASE_NOTES</code></td>
+      <td valign="top">Licensing, readme, release notes.</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>bmark/</code></td>
+      <td valign="top">Example benchmark application</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>doc/</code></td>
+      <td valign="top">LINX documentation</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>drivers/</code></td>
+      <td valign="top">Dummy network driver for LINX message trace</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>example/</code></td>
+      <td valign="top">Example client/server application</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>include/</code></td>
+      <td valign="top">LINX include files</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>liblinx/</code></td>
+      <td valign="top">LINX library source code</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>linxcfg/</code>, <code>linxdisc/</code>,
+        <code>linxstat/</code>, <code>linxgw/</code> </td>
+      <td valign="top">LINX commands source code</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>net/linx/</code></td>
+      <td valign="top">LINX source code</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>patch/</code></td>
+      <td valign="top">Patches for libpcap and tcpdump</td>
+    </tr>
+    <tr>
+      <td valign="top"><code>scripts/</code></td>
+      <td valign="top">Build scripts</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="building">3. Building LINX</h2>
+
+<p>To build LINX self hosted, e.g. for the running kernel, just go to the top
+level LINX directory and do ./configure followed by make:</p>
+<pre>   $ cd /path/to/linx-n.n.n/
+   $ ./configure
+   $ make</pre>
+
+<p>This will build the entire LINX API libs and user-space LINX tools.</p>
+
+<p>Note that headers in the target Linux kernel source tree must be available
+to be able to compile LINX. This is needed also when compiling for the running
+Linux kernel.</p>
+
+<p>Cross-compiling the LINX API libs and tools requires the PATH to include the
+cross compilier tool kit and the make files must be configured with a host
+parameter:</p>
+<pre>   $ cd /path/to/linx-n.n.n/
+   $ PATH=/path/to/cross/compiler:$PATH
+   $ ./configure --host=powerpc-linux
+   $ make</pre>
+
+<p>To build the LINX kernel modules go to the LINX kernel modules directory and
+do make:</p>
+<pre>   $ cd /path/to/linx-n.n.n/net/linx
+   $ make</pre>
+
+<p>Cross-compiling LINX for another target requires a few variables to be set,
+either as environment variables or by changing the config.mk file in the top
+level LINX directory. The following is needed:</p>
+<ul>
+  <li><code>ARCH</code> &ndash; Target architecture, e.g. <code>ppc</code></li>
+  <li><code>CROSS_COMPILE</code> &ndash; Cross compiler tool prefix, e.g.
+    <code>powerpc-linux-</code></li>
+  <li><code>KERNEL</code> &ndash; Kernel source tree</li>
+</ul>
+
+<p>In addition, the <code>PATH</code> environment variable must be set to reach
+the cross compiler tool kit. When this has been set up correctly, go to the top
+level LINX directory and do make.</p>
+
+<p>When building the entire LINX package, the following is built:</p>
+<ul>
+  <li>In <code>net/linx/</code> 
+    <ul>
+      <li>The LINX kernel module, <code>linx.ko</code></li>
+      <li>The LINX Ethernet Connection Manager kernel module,
+        <code>linx_eth_cm.ko</code></li>
+      <li>The LINX TCP Connection Manager kernel module,
+        <code>linx_tcp_cm.ko</code></li>
+      <li>The LINX Rapid IO Connection Manager kernel module,
+        <code>linx_rio_cm.ko</code></li>
+      <li>The LINX Shared Memory Connection Manager kernel module,
+        <code>linx_shm_cm.ko </code></li>
+      <li>The LINX Connection Manager Control Layer kernel module,
+        <code>linx_cmcl.ko</code></li>
+    </ul>
+  </li>
+  <li>In <code>lib/</code> (created) 
+    <ul>
+      <li>The LINX library, <code>liblinx.a</code></li>
+      <li>The LINX configuration library, <code>libcfg.a</code></li>
+      <li>The LINX Gateway library, <code>libgw.a</code></li>
+      <li>The </li>
+    </ul>
+  </li>
+  <li>In <code>bin/</code> (created) 
+    <ul>
+      <li>The <code>mklink</code> command for creating links</li>
+      <li>The <code>rmlink</code> command for destroying links</li>
+      <li>The <code>mkethcon</code> command for creating connections using the
+        LINX Ethernet Connection Manager.</li>
+      <li>The <code>rmethcon</code> command for destroying connections created
+        with the mkethcon command.</li>
+      <li>The <code>mkshmcon</code> command for creating connections using the
+        LINX Shared Memory Connection Manager.</li>
+      <li>The <code>rmshmcon</code> command for destroying connections created
+        with the mkshmcon command.</li>
+      <li>The <code>mktcpcon</code> command for creating connections using the
+        LINX TCP Connection Manager.</li>
+      <li>The <code>rmtcpcon</code> command for destroying connections created
+        with the mktcpcon command.</li>
+      <li>The <code>mkriocon</code> command for creating connections using the
+        LINX Rapid IO Connction Manager.</li>
+      <li>The <code>rmriocon</code> command for destroying connections created
+        with the <code>mkriocon</code> command.</li>
+      <li>The <code>mkcmclcon</code> command for creating connections using the
+        LINX Connection Manager Control Layer.</li>
+      <li>The <code>rmcmclcon</code> command for destroying connections created
+        with the <code>mkcmclcon</code> command.</li>
+      <li>The <code>linxdisc</code> daemon for dynamic LINX topology setup</li>
+      <li>The <code>linxgws</code> daemon for connecting to applications using
+        the Gateway protocol.</li>
+      <li>The <code>linxgwcmd</code> command for listing Gateway servers.</li>
+      <li>The <code>linxstat</code> command for LINX statistics</li>
+      <li>(Also the <code>linxcfg</code> command for creating connections and
+        links - will be removed in a future release.)</li>
+    </ul>
+  </li>
+  <li>In <code>drivers/net</code> 
+    <ul>
+      <li>The LINX message trace dummy network driver,
+      <code>linxtrace.ko</code></li>
+    </ul>
+  </li>
+  <li>In <code>example/bin</code> (created) 
+    <ul>
+      <li>LINX example application binaries, <code>linx_basic_client</code> and
+        <code>linx_basic_server</code></li>
+    </ul>
+  </li>
+  <li>In <code>bmark/bin</code> (created) 
+    <ul>
+      <li>A simple benchmark application, <code>linx_bmark</code></li>
+    </ul>
+  </li>
+</ul>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="using_linx">4. Using LINX</h2>
+
+<p>This section describes the fundamental concepts of LINX communication. The
+examples show how to use the LINX API, defined in the file <code><a
+href="../html/linx.h.3.html">linx.h</a></code>.</p>
+
+<p>See section <a href="#getting_started">5</a> for information on how to load
+and configure LINX for your system.</p>
+
+<p></p>
+
+<h3 id="linx_endpoints">4.1 LINX Endpoints</h3>
+
+<p>An application that wants to communicate using LINX first creates a
+<strong>LINX endpoint</strong> by calling <a
+href="../html/linx_open.3.html"><code>linx_open()</code></a>.
+<code>linx_open()</code> assigns a name to the endpoint, the name is a
+null-terminated string. The name is not required to be unique. On Linux, the
+name may be of any length, but note that there may be restrictions on other
+platforms. One thread may own multiple LINX endpoints simultaneously.</p>
+
+<p></p>
+<pre>   LINX *client = linx_open("client", 0, NULL);</pre>
+
+<p></p>
+
+<p>LINX assigns each endpoint a binary identifier called a
+<strong>SPID</strong>. The SPID is used to refer to the endpoint when
+communicating with it. SPIDs are unique within the node on which they are
+created. </p>
+
+<p>Each endpoint is internally associated with a LINX socket. An application
+can obtain the socket descriptor of a LINX endpoint using the <a
+href="../html/linx_get_descriptor.3.html"><code>linx_get_descriptor()</code></a>
+call if needed, e.g. for generic <code>poll()</code> or <code>select()</code>
+calls together with other descriptors. Note that a LINX socket descriptor
+retrieved this way must not be closed by calling <code>close()</code>.</p>
+
+<p>A LINX endpoint is closed by calling <a
+href="../html/linx_close.3.html"><code>linx_close()</code></a>. This frees all
+resources owned by the endpoint. If a thread exits, all of its owned LINX
+endpoints will automatically be closed.</p>
+
+<p></p>
+
+<h3 id="linx_signals">4.2 LINX Signals</h3>
+
+<p>Applications communicate by exchanging messages called <strong>LINX
+signals</strong> between endpoints. A LINX signal buffer contains a mandatory
+leading 4 byte <strong>signal number</strong>, optionally followed by data that
+the sender wishes to convey to the destination. Thus, the minimum size of a
+LINX signal is 4 bytes. Signal numbers are used to identify different types of
+signals and are mainly defined by applications. The signal number range
+0x10000000 to 0xFFFFFFFF is available for user applications.</p>
+
+<p>New LINX signals are easily defined. It is simply a matter of declaring a
+struct (see the example below). Each application shall also declare the
+<code>union LINX_SIGNAL</code> type to contain all LINX signals used in that
+particular application. LINX signals shall be cast to pointers to this generic
+structure in LINX API function calls.</p>
+
+<p></p>
+<pre>   #define REQUEST_SIG 0x10000001 /* Signal number */
+   #define REPLY_SIG   0x10000002
+
+   struct request_sig
+   {
+      LINX_SIGSELECT sig_no;
+      int code;
+   }
+
+   struct reply_sig
+   {
+      LINX_SIGSELECT sig_no;
+      int status;
+   }
+
+   union LINX_SIGNAL
+   {
+      LINX_SIGSELECT     sig_no;
+      struct request_sig request;
+      struct reply_sig   reply;
+   };</pre>
+
+<p></p>
+
+<p>Before a LINX signal can be sent, it must be allocated and initialized. The
+<a href="../html/linx_alloc.3.html"><code>linx_alloc()</code></a> call returns
+a LINX signal buffer and initializes the signal number with a provided
+value.</p>
+
+<p></p>
+<pre>   union LINX_SIGNAL *sig;
+
+   sig = linx_alloc(endpoint, sizeof(struct request_sig), REQUEST_SIG);
+   sig-&gt;request.code = 1;</pre>
+
+<p></p>
+
+<p>The returned LINX signal buffer is owned by the LINX endpoint that allocated
+it and may not be used by other endpoints. Sending a LINX signal transfers its
+ownership to the destination endpoint. A LINX signal is never shared between
+different threads or endpoints. When a LINX signal buffer is not needed
+anymore, it should be freed by calling <a
+href="../html/linx_free_buf.3.html"><code>linx_free_buf()</code></a>. </p>
+
+<p>Before sending a LINX signal, the SPID of the destination endpoint must be
+known. LINX provides a method to obtain the SPID of an endpoint by searching
+for its name, this is called <i>hunting</i> and is described in the next
+section. The receiver of a LINX signal can look up the SPID of the sender using
+the <a href="../html/linx_sender.3.html"><code>linx_sender()</code></a> call.
+When the destination SPID is known, the LINX signal can be sent:</p>
+
+<p></p>
+<pre>   linx_send(endpoint, &amp;sig, server_spid);</pre>
+
+<p></p>
+
+<p>Transferred LINX signals are stored in a receive queue associated with the
+destination endpoint. The destination endpoint chooses when to receive a LINX
+signal and what signal numbers to accept at any given time. This means that an
+endpoint may choose to receive LINX signals in a different order than they were
+sent, based on signal number filtering. A received LINX signal may be reused,
+for example to send a reply, if the buffer is large enough. Just overwrite the
+signal number field with the new value.</p>
+
+<p></p>
+<pre>   union SIGNAL *sig;
+   LINX_SIGSELECT any_sig[]= { 0 }; /* Signal filter. Here any signal is allowed */
+
+   linx_receive(endpoint, &amp;sig, any_sig);</pre>
+
+<p></p>
+
+<p>LINX provides automatic endian conversion of the signal number if needed
+when a LINX signal is sent to an endpoint located on a remote node. The rest of
+the signal data is not converted, this must be taken care of in the
+applications.</p>
+
+<p></p>
+
+<h3 id="hunting">4.3 Hunting for an Endpoint</h3>
+
+<p>Before sending a LINX signal, the sender must know the SPID of the
+destination endpoint. The SPID of a peer endpoint is obtained by asking LINX to
+<strong>hunt</strong> for its name using the <a
+href="../html/linx_hunt.3.html"><code>linx_hunt()</code></a> call. When the
+peer endpoint has been found, LINX makes sure that a LINX signal is sent to the
+hunting endpoint. This LINX signal appears to have been sent from the found
+peer endpoint, i.e the SPID can be obtained by looking at the sender of the
+LINX signal. The hunting endpoint may provide a LINX signal to be sent back
+when the sought endpoint has been found. If no LINX signal is provided, a
+default LINX signal of type <code>LINX_OS_HUNT_SIG</code> is sent instead.</p>
+
+<p></p>
+<pre>   union SIGNAL *sig;
+   LINX_SPID server_spid;
+   LINX_SIGSELECT sig_sel_hunt = { 1, LINX_OS_HUNT_SIG };
+
+   linx_hunt(endpoint, "server", NULL);
+   linx_receive(endpoint, &amp;sig, sig_sel_hunt);
+   server_spid = linx_sender(endpoint, &amp;sig);</pre>
+
+<p></p>
+
+<p>If the peer endpoint does not exist when hunted for, LINX stores the hunt
+internally as pending. The LINX hunt signal is sent back to the hunting
+endpoint when an endpoint with matching name is created.</p>
+
+<p>If there are several LINX endpoints with the same name, it is not defined
+which one is used to resolve a hunt call.</p>
+
+<p></p>
+
+<h3 id="attaching">4.4 Attaching to an Endpoint</h3>
+
+<p>If a LINX endpoint sends a LINX signal to another endpoint, but the
+receiving endpoint has terminated for some reason, the LINX signal will be
+thrown away (freed) by LINX.</p>
+
+<p>LINX provides a mechanism to supervise a peer endpoint, i.e. to request
+notification of when it is terminated. The <a
+href="../html/linx_attach.3.html"><code>linx_attach()</code></a> call is used
+to <strong>attach</strong> to an endpoint. When a supervised endpoint
+terminates, LINX makes sure that a LINX signal is sent back to the supervising
+endpoint. This LINX signal appears to have been sent from the supervised
+(terminated) endpoint, i.e the SPID can be obtained by looking at the sender of
+the LINX signal. The endpoint that attaches may provide a LINX signal to be
+sent back when the supervised process terminates. If no LINX signal is
+provided, a default LINX signal of type <code>LINX_OS_ATTACH_SIG</code> is sent
+instead.</p>
+
+<p></p>
+<pre>   linx_attach(endpoint, server_spid, NULL);</pre>
+
+<p></p>
+
+<p>If the supervising endpoint wants to resume communication, it should issue a
+new hunt for the peer endpoint name, in order to be notified when a new
+endpoint with the same name is found or created.</p>
+
+<p></p>
+
+<h3 id="inter-node">4.5 Inter-node Communication</h3>
+
+<p>LINX endpoints are able to communicate transparently regardless of whether
+they are located on the same node or on different nodes interconnected in some
+way in a LINX cluster. A cluster may use different operating systems that
+support LINX &ndash; a LINX endpoint on a Linux node may for example
+communicate with a process on a connected DSP running the Enea OSEck real-time
+operating system.</p>
+
+<p>A LINX cluster should be seen as a logical network established between a set
+of nodes interconnected by some underlying transport that is supported by LINX,
+such as Ethernet. For two nodes to be able to communicate, a LINX
+<strong>link</strong> must first be established between them. Each node may set
+up any number of links to other nodes which are directly reachable on the
+underlying transport. Links can be manually set up by using the <a
+href="../html/mkethcon.1.html"><code>mkethcon</code></a> or <a
+href="../html/mkshmcon.1.html"><code>mkshmcon</code></a> or <a
+href="../html/mktcpcon.1.html"><code>mktcpcon</code></a> and the <a
+href="../html/mklink.1.html"><code>mklink</code></a> command, or dynamically
+established using the LINX discovery daemon, <a
+href="../html/linxdisc.1.html"><code>linxdisc</code></a>.</p>
+
+<p>Each link has a name that is unique within the node. The name of a link may
+be (and usually is) different on the two sides of the link, i.e. the link
+between nodes A and B may be called &ldquo;LinkToB&rdquo; on A and
+&ldquo;LinkToA&rdquo; on B. Often the link name is the same as the name of the
+remote node connected via the link.</p>
+
+<p><strong>Note that nodes do not have addresses in LINX</strong>. To reach a
+remote node, the complete path of link names to be used is specified.</p>
+
+<p>To hunt for a LINX endpoint located on a remote node, the name of the
+endpoint is prepended with the path of link names that shall be used to reach
+that node, separated by &ldquo;/&rdquo;.</p>
+
+<p>Example:</p>
+
+<p>Hunting for &ldquo;LinkToB/LinkToC/EndpointName&rdquo; tells LINX to search
+for &ldquo;EndpointName&rdquo; on the node two hops away from us that is
+reachable by traversing first &ldquo;LinkToB&rdquo; and then
+&ldquo;LinkToC&rdquo;. </p>
+
+<p></p>
+
+<h3 id="virtual_endpoints">4.6 Virtual Endpoints</h3>
+
+<p>Since LINX SPIDs are unique within a single node only, it is not possible to
+address remote endpoints by using their remote SPIDs directly. LINX inter-node
+communication is based on automatic creation of local <strong>virtual
+endpoints</strong> that represent remote endpoints. Each LINX endpoint involved
+in inter-node communication has a virtual endpoint, internally created by LINX,
+representing it on the peer node. A virtual endpoint acts as a proxy for a
+particular remote endpoint and is communicated with in the same way as normal
+(user-created) endpoints. This way, applications do not need to know the true
+SPIDs of endpoints on other nodes - they always communicate with local virtual
+endpoints, which have local SPIDs. The life span of a virtual endpoint matches
+the life span of the remote endpoint it represents.</p>
+
+<p>A LINX signal sent to a virtual endpoint is intercepted by LINX and
+automatically forwarded to the remote node where the endpoint it represents is
+located. On the destination node, LINX delivers the LINX signal to its intended
+destination and makes it appear as if it was sent from a virtual endpoint
+representing the true sender.</p>
+
+<p>A LINX signal received from an endpoint on a remote node always appears to
+have been sent from the corresponding local virtual endpoint.</p>
+
+<p>Virtual endpoints are created by LINX when needed, typically when a remote
+hunt call has been made and the peer endpoint has been found (or created) on
+the remote node. Virtual endpoints use the same naming syntax as the hunt path
+described above. This means that when LINX creates a virtual endpoint, the
+pending hunt request for its name are resolved and the hunt LINX signal is sent
+to the hunting endpoint from the SPID of the virtual endpoint.</p>
+
+<p>LINX also creates virtual endpoints representing links to remote nodes.
+These endpoints carry the same name as the link, prepended with "/". An
+application can monitor the state of a link by hunting for and attaching to the
+virtual endpoint representing it.</p>
+
+<p>When an endpoint terminates, LINX makes sure that all virtual endpoints
+representing it on remote nodes are terminated too (so that attach LINX signals
+are sent to supervising endpoints). If a remote node is shut down or becomes
+unreachable, LINX will detect this and terminate all virtual endpoints that
+represent endpoints located on that node.</p>
+
+<p>Example:</p>
+
+<p>An application on node A hunts for "LinkToB/server". This tells LINX to
+search for the endpoint "server" on node B, reachable by traversing link
+"LinkToB". When an endpoint named "server" has been found (or created) on B,
+LINX creates a virtual endpoint on node A named "LinkToB/server" and sends the
+hunt LINX signal from this virtual endpoint to the hunting endpoint. After
+receiving the hunt LINX signal, the application is able to communicate with the
+remote endpoint "server" on node B by sending LINX signals to the virtual
+endpoint "LinkToB/server".</p>
+
+<p>Note that the scenario above will also create a virtual endpoint named
+"LinkToA/client" on node B (if "client" is the name of the hunting endpoint and
+"LinkToA" is the name of the link on node B).</p>
+
+<p></p>
+
+<h3 id="out_of_band">4.7 Out-of-band signalling</h3>
+
+<p>LINX has from version 2.1 and forth support for out-of-band signalling,
+enabling the user to set an out-of-band attribute on signals when sending them.
+LINX will make a best-effort attempt to deliver any out-of-band signals ahead
+of normal (in-band) signals between two LINX endpoints. LINX does not guarantee
+that out-of-band signals really are delivered before in-band signals. Except
+being able to be delivered ahead of in-band signals, out-of-band signals follow
+the same rules as internal signals, delivery is guaranteed and the order in
+which out-of-band signals are sent is kept on the receiving side, i.e. two
+out-of-band signals sent one after the other are guaranteed to arrive in the
+same order on the receiver.</p>
+
+<p>If the receiving side should have no support for out-of-band signalling,
+i.e. an older version of LINX, the signal will be treated in-band.</p>
+
+<p>Out-of-band signals can be sent both intranode and internode. In the
+intranode case the signal is put in the receiver's in-queue ahead of in-band
+signals but not before any out-of-band signals already in the queue. When
+sending out-of-band signals internode the out-of-band attribute is passed down
+to the connection layer and it is up to the connection layer if it chooses to
+treat out-of-band signals differently than in-band signals, trying to deliver
+them "faster" than in-band signals.</p>
+
+<p>Upon receiving a signal the user can find out if the received signal has the
+out-of-band attribute set.</p>
+
+<p>LINX has from version 2.1 and forth support for tying two separate
+connections to one logical link. When doing so one of the connections is used
+for in-band signals while the other connection is used for out-of-band
+signalling. The two connections can be over different media and the link is
+considered in the state up only when both connections are in state connected.
+If one of the connections is disconnected the link is considered down, thus no
+fail-over is done.</p>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="getting_started">5. Getting Started</h2>
+
+<h3 id="loading">5.1 Loading the LINX Kernel Modules</h3>
+
+<p>To enable LINX, simply load the LINX kernel module into the Linux kernel
+(requires root permissions):</p>
+<pre>   $ insmod net/linx/linx.ko</pre>
+
+<p>Applications are now able to use LINX, but only to communicate within the
+node.</p>
+
+<p></p>
+
+<p>To use LINX for communication between several interconnected nodes, also
+load the appropriate LINX Connection Manager kernel module depending on which
+underlying transport to use. LINX currently supports raw Ethernet and
+TCP/IP.</p>
+
+<p>To use raw Ethernet as transport, load the Ethernet CM kernel module:</p>
+<pre>   $ insmod net/linx/linx_eth_cm.ko</pre>
+
+<p>To use TCP/IP as transport, load the TCP CM kernel module:</p>
+<pre>   $ insmod net/linx/linx_tcp_cm.ko</pre>
+
+<p></p>
+
+<h3 id="creating_links">5.2 Creating Links</h3>
+
+<h4 id="normal_links">5.2.1 Normal case - one link over one connection</h4>
+
+<p>To setup a LINX cluster with two participating nodes, here called A and B,
+start by installing the appropriate kernel modules as described above on both
+nodes. Then use the connection manager specific setup tool to create a
+connection on each node to create a connection to the other node and then the
+mklink command on both nodes to create a logical link. To destroy a link the
+rmlink command is used.</p>
+
+<p>Older versions of LINX used the linxcfg tool which created both the
+connection and link at the same time. The linxcfg tool is delivered with this
+package for backwards compatibility but will be removed in upcomming releases.
+For documentation of the linxcfg tool see the man-page for linxcfg. See the <a
+href="../html/linxcfg.1.html">linxcfg(1)</a>.</p>
+
+<p>It is up to each connection manager to provide a tool for setting up a
+connection. The LINX release contains Ethernet and TCP connection managers,
+their corresponding tools for creating and destroying connections are mkethcon,
+rmethcon, mkshmcon, rmshmcon, mktcpcon and rmtcpcon.</p>
+
+<p>When using Ethernet, the MAC address of the remote node, the device name to
+use and a suitable link name shall be provided.</p>
+
+<p>On node A (replace the MAC address with the actual value on node B):</p>
+<pre>   $ ./bin/mkethcon --mac=00:18:4D:72:13:1B --if=eth0 ConnToB
+   $ ./bin/mklink --connection=ethcm/ConnToB LinkToB</pre>
+
+<p>On node B (replace the MAC address with the actual value on node A):</p>
+<pre>   $ ./bin/mkethcon --mac=00:0C:6E:C3:FB:A2 --if=eth0 ConnToA
+   $ ./bin/mklink --connection=ethcm/ConnToA LinkToA</pre>
+
+<p>When using Shared Memory, the mailbox identifier shall be provided. It is
+also necessary to provide the -x option on one of the sides.</p>
+
+<p>On CPU A:</p>
+<pre>   $ ./bin/mkshmcon -b 1 ConnToB
+   $ ./bin/mklink --connection=shmcm/ConnToB LinkToB</pre>
+
+<p>On CPU B:</p>
+<pre>   $ ./bin/mkshmcon -b 1 -x ConnToA
+   $ ./bin/mklink --connection=shmcm/ConnToA LinkToA</pre>
+
+<p>When using TCP/IP, the IP address of the remote node and a suitable link
+name shall be provided:</p>
+
+<p>On node A (replace the IP address with the actual value on node B):</p>
+<pre>   $ ./bin/mktcpcon --ipaddr=192.168.1.2 ConnToB
+   $ ./bin/mklink --connection=tcpcm/ConnToB LinkToB</pre>
+
+<p>On node B (replace the IP address with the actual value on node A):</p>
+<pre>   $ ./bin/mktcpcon --ipaddr=192.168.1.1 ConnToA
+   $ ./bin/mklink --connection=tcpcm/ConnToA LinkToA</pre>
+
+<p>After these steps, the LINX cluster is available and applications can
+communicate with each other transparently, regardless of on which node they are
+located.</p>
+
+<p></p>
+
+<h4 id="oob_links">5.2.2 Out-of-band - one link over two connections</h4>
+
+<p>LINX supports one logical link over two connections, the connection managers
+do not need to aware of this and connections are setup the same way as before.
+Then the mklink tool is used to tie two connections to one logical link. The
+connections does not need to be on the same media.</p>
+
+<p>In this example a logical link is setup between node A and node B using the
+Ethernet Connection Manager and VLAN. The non-VLAN connection will be used for
+in-band signalling and the VLAN connection for out-of-band siganlling. The
+order in which the connections are passed in on the command line to mklink
+determines which connection will be used for out-of-band, the first connection
+is used for in-band and the second for out-of-band.</p>
+
+<p>On node A (replace the MAC address and IP address to that of node B):</p>
+<pre>   $ /sbin/vconfig add eth0 5
+   $ /sbin/ifconfig eth0.5 up
+   $ ./bin/mkethcon --mac=00:18:4D:72:13:1B --if=eth0 EthConnToB
+   $ ./bin/mkethcon --mac=00:18:4D:72:13:1B --if=eth0.5 VlanEthConnToB
+   $ ./bin/mklink --connection=ethcm/EthConnToB --connection=ethcm/VlanEthConnToB LinkToB</pre>
+
+<p>On node B (replace the MAC address and IP address to that of node A):</p>
+<pre>   $ /sbin/vconfig add eth0 5
+   $ /sbin/ifconfig eth0.5 up
+   $ ./bin/mkethcon --mac=00:0C:6E:C3:FB:A2 --if=eth0 EthConnToA
+   $ ./bin/mkethcon --mac=00:0C:6E:C3:FB:A2 --if=eth0.5 VlanEthConnToA
+   $ ./bin/mklink --connection=ethcm/EthConnToA --connection=ethcm/VlanConnToA LinkToA</pre>
+
+<p>Now all in-band signals sent over the link LinkToA will be sent on the
+non-VLAN Ethernet connection and all out-of-band signals will be sent on the
+VLAN Ethernet connection.</p>
+
+<h3 id="running_example">5.3 Running the LINX Example Application</h3>
+
+<p>The LINX example application is found in the <code>example/</code>
+directory. It is a simple client / server based application that serves both as
+an introduction to the LINX API programming model, and as a quick way of
+testing that LINX is up and running in a system with one or more nodes.</p>
+
+<p>See above for information on how to build the LINX kernel modules and
+binaries (including the example).</p>
+
+<p>Doing <code>make example</code> in the top level LINX directory builds only
+the example. This produces two executables in the <code>example/bin</code>
+directory: <code>linx_basic_client</code> and
+<code>linx_basic_server</code>.</p>
+
+<p>The actual operation of the application is simple; the client sends LINX
+signals to the server and the server sends reply LINX signals back. There can
+be any number of clients distributed on different nodes. Each client will hunt
+for the server, either on a given link name (path of link names) or on the
+local machine if no linkname is provided. The server can be terminated and
+restarted, the clients use LINX attach to detect when the server disappears and
+will resume operation when the server is available again.</p>
+
+<p>To run the example on a single node, the followings steps are needed:</p>
+<ol>
+  <li>Build LINX</li>
+  <li>Load the LINX kernel module into the kernel</li>
+  <li>Start the example server in the background:
+    <code>example/bin/linx_basic_server &amp;</code></li>
+  <li>Start the example client: <code>example/bin/linx_basic_client</code></li>
+</ol>
+
+<p>To run the example on two nodes, the following steps are needed:</p>
+<ol>
+  <li>Build LINX</li>
+  <li>Load the LINX kernel module on both nodes</li>
+  <li>Load the appropriate LINX CM kernel module on each node</li>
+  <li>On each node, use the <code>mkethcon/mktcpcon</code> and mklink commands
+    to establish the link</li>
+  <li>On one node, start the example server:
+    <code>example/bin/linx_basic_server</code></li>
+  <li>On the other node, start the example client:
+    <code>example/bin/linx_basic_client linkname</code><br />
+    Where <code>linxname</code> is either LinkToA or LinkToB according to the
+    link names given above in <a href="#creating_links">5.2</a>).</li>
+</ol>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="utilities">6. LINX Utilities</h2>
+
+<p>Description of the tools provided with this release.</p>
+
+<h3 id="mklink">6.1 mklink</h3>
+
+<p>The <code>mklink</code> command creates LINX links to remote nodes. The
+connection(s) must already be created by the Connection Manager used. The type
+of connection(s) used is transparent for the <code>mklink</code>. A logical
+LINX link can use two connections, one for normal signalling and one for
+out-of-band signalling, the first connection on the command-line will used for
+in-band and the second for out-of-band signalling. </p>
+
+<p>Example:</p>
+<pre>   $ ./bin/mklink --connection=ethcm/eth_connA linkA</pre>
+
+<p>Example with two links, the first for in-band and second for out-of-band
+signalling:</p>
+<pre>   $ ./bin/mklink --connection=ethcm/eth_connA --connection=ethcm/eth_connA_2 linkA</pre>
+
+<p>The <code>mklink</code> command must be used on both participating nodes for
+a link to be established.</p>
+
+<p>See the <a href="../html/mklink.1.html">mklink(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="rmlink">6.2 rmlink</h3>
+
+<p>The <code>rmlink</code> command is used to destroy links created by the
+<code>mklink</code> command, both sides must run this command.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/rmlink linkA</pre>
+
+<p>See the <a href="../html/rmlink.1.html">rmlink(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="mkethcon">6.3 mkethcon</h3>
+
+<p>The <code>mkethcon</code> command is used to create Ethernet Connections to
+remote nodes. The connection name is then used as a handle when creating a LINX
+link.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/mkethcon --mac=01:23:45:67:89:A0 --if=eth0 eth_connA</pre>
+
+<p>The <code>mkethcon</code> command must be used on both participating nodes
+for a Ethernet connection to be established.</p>
+
+<p>See the <a href="../html/mkethcon.1.html">mkethcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="rmethcon">6.4 rmethcon</h3>
+
+<p>The <code>rmethcon</code> command is used to destroy connections created by
+the <code>mkethcon</code> command, both sides must run this command.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/rmethconn eth_connA</pre>
+
+<p>See the <a href="../html/rmethcon.1.html">rmethcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="mkshmcon">6.5 mkshmcon</h3>
+
+<p>The <code>mkshmcon</code> command is used to create Shared Memory
+Connections to remote nodes. The connection name is then used as a handle when
+creating a LINX link.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/mkshmcon -b 1 -n 16 -m 120 shm_connA</pre>
+
+<p>The <code>mkshmcon</code> command must be used on both participating nodes
+for a Shared Memory connection to be established.</p>
+
+<p>See the <a href="../html/mkshmcon.1.html">mkshmcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="rmshmcon">6.6 rmshmcon</h3>
+
+<p>The <code>rmshmcon</code> command is used to destroy connections created by
+the <code>mkshmcon</code> command, both sides must run this command.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/rmshmconn shm_connA</pre>
+
+<p>See the <a href="../html/rmshmcon.1.html">rmshmcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="mktcpcon">6.7 mktcpcon</h3>
+
+<p>The <code>mktcpcon</code> command is used to create TCP Connections to
+remote nodes. The connection name is then used as a handle when creating a LINX
+link.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/mktcpcon --ipaddr=12.34.56.78 tcp_connA</pre>
+
+<p>The <code>mktcpcon</code> command must be used on both participating nodes
+for a TCP connection to be established.</p>
+
+<p>See the <a href="../html/mktcpcon.1.html">mktcpcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="rmtcpcon">6.8 rmtcpcon</h3>
+
+<p>The <code>rmtcpcon</code> command is used to destroy connections created by
+the <code>mktcpcon</code> command, both sides must run this command.</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/rmtcpconn tcp_connA</pre>
+
+<p>See the <a href="../html/rmtcpcon.1.html">rmtcpcon(1)</a> reference
+documentation for details.</p>
+
+<h3 id="L1927">6.9 mkriocon</h3>
+
+<p>The mkriocon command is used to create RIO Connections to remote nodes. The
+connection name is then used as a handle when creating a LINX link.</p>
+
+<p>Example:</p>
+
+<p> $ ./bin/mkriocon -p 1 -l 1 -m 0 -I 2 -t 5 -i rio0 rio-conn</p>
+
+<p>The mkriocon command must be used on both participating nodes for a TCP
+connection to be established.</p>
+
+<p>See the <a href="../html/mkriocon.1.html">mkriocon(1)</a> reference
+documentation for details.</p>
+
+<h3 id="L2305">6.10 rmriocon</h3>
+
+<p>The rmriocon command is used to destroy connections created by the mkriocon
+command, both sides must run this command.</p>
+
+<p>Example:</p>
+
+<p>$ ./bin/rmrioconn rio-conn</p>
+
+<p>See the <a href="../html/rmriocon.1.html">rmriocon(1)</a> reference
+documentation for details.</p>
+
+<h3 id="L2314">6.11 mkcmclcon</h3>
+
+<p>The mkcmcmlcon command is used to create CMCL Connections to remote nodes.
+The connection name is then used as a handle when creating a LINX link. CMCL
+also takes a connection name representing the layer underneath as input
+parameter, the CMCL connection is created using the underlying connection.</p>
+
+<p>Example:</p>
+
+<p> $ ./bin/mkcmclcon -s -c cmtl-conn cmcl-conn -t 3000</p>
+
+<p>The mkcmclcon command must be used on both participating nodes for a CMCL
+connection to be established.</p>
+
+<p>See the <a href="../html/mkcmclcon.1.html">mkcmclcon(1)</a> reference
+documentation for details.</p>
+
+<h3 id="L2323">6.12 rmcmclcon</h3>
+
+<p>The rmcmclcon command is used to destroy connections created by the
+mkcmclcon command, both sides must run this command.</p>
+
+<p>Example:</p>
+
+<p>$ ./bin/rmcmclconn cmcl-conn</p>
+
+<p>See the <a href="../html/rmcmclcon.1.html">rmcmclcon(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="linxdisc">6.13 linxdisc</h3>
+
+<p>On Ethernet, a LINX cluster can be automatically established and supervised
+by running the <code>linxdisc</code> daemon on all participating nodes. The
+daemon periodically broadcasts advertisements and waits for advertisements from
+remote nodes. Each node advertises a cluster name and a node name. These values
+are defined in a configuration file provided to <code>linxdisc</code>. Each
+cluster and each node must have a unique name. The configuration file also
+defines filtering rules for which network interfaces to use and which remote
+node names to connect to. When an advertisement is received from a node that
+belongs to the same cluster and is allowed according to the node name filtering
+rules, a link is automatically set up between the nodes.</p>
+
+<p>See the <a href="../html/linxdisc.8.html">linxdisc(8)</a> and <a
+href="../html/linxdisc.conf.5.html">linxdisc.conf(5)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="linxstat">6.14 linxstat</h3>
+
+<p>LINX status information can be fetched from the LINX kernel module and
+displayed using the <code>linxstat</code> command. Status is shown for local
+and virtual (remote) endpoints as well as links to other nodes. The information
+includes names, SPIDs, queued LINX signals and pending hunts and attaches. See
+the <a href="../html/linxstat.1.html">linxstat(1)</a> reference documentation
+for details.</p>
+
+<p></p>
+
+<h3 id="linxgws">6.15 linxgws</h3>
+
+<p>In Linx for Linux 2.2 the LINX Gateway was added allowing connectivity
+between Linux applications using the Gateway client protocol to LINX systems.
+The Gateway Server runs as a daemon and is started on the command line,
+configuration is done using a configuration file. The default location is
+/etc/linxgws.conf but can also be specified at startup. The LINX Gateway
+Server, its configuration and the Gateway Client are described in detail in the
+<a href="UsersGuide_LINX_Gateway.html">Users Guide for the LINX Gateway</a> (<a
+href="../UsersGuide_LINX_Gateway.pdf">PDF-version</a>).</p>
+
+<p>Example:</p>
+<pre>   $ ./bin/linxgws linxgws.conf</pre>
+
+<p>See the <a href="../html/linxgws.8.html">linxgws(8)</a> and <a
+href="../html/linxgws.conf.5.html">linxgws.conf(5)</a> reference documentation
+for details.</p>
+
+<p></p>
+
+<p></p>
+
+<h3 id="linxgwcmd">6.16 linxgwcmd</h3>
+
+<p>The linxgwcmd tool is used to discover Gateway servers within the current
+UDP broadcast domain. Can also be used to test connectivity towards a Gateway
+server and also simple benchmarking.</p>
+
+<p>Example: list all Gateway servers broadcasting on port 30000</p>
+<pre>   $ ./bin/linxgwcmd -l -b udp://*:30000</pre>
+
+<p>Example: connect to a Gateway server named "default_gws" and echo 10 signals
+of 100 bytes each.</p>
+<pre>   $ ./bin/linxgwcmd -s default_gws -e10,100</pre>
+
+<p>See the <a href="../html/linxgwcmd.1.html">linxgwcmd(1)</a> reference
+documentation for details.</p>
+
+<p></p>
+
+<h3 id="message_trace">6.17 LINX Message Trace</h3>
+
+<p>When using an external protocol analyzer such as <code>tcpdump</code>, only
+LINX messages sent between nodes are visible. Intra-node transmissions never
+reach the point where the Linux kernel duplicates messages for listening
+protocol analyzers (the Linux General Device Driver Interface). LINX provides a
+feature to make these messages visible as well. This is done by duplicating all
+LINX signals that are sent within LINX to a special dummy network driver called
+linx0.</p>
+
+<p>There are also patches for <code>tcpdump</code> and <code>libpcap</code>
+included in the LINX release (since LINX 1.2). These patches make tcpdump and
+libpcap understand the messages that are sent to linx0.</p>
+
+<p>To start using LINX message trace, the following steps are required:</p>
+<ol>
+  <li>Compile the LINX kernel module with the
+    <code>LINX_MESSAGE_TRACE=yes</code> option and load it into the kernel.</li>
+  <li>Compile the LINX dummy network driver and load it into the kernel. Enable
+    it by doing: <code>ifconfig linx0 up</code></li>
+  <li>Compile tcpdump and libpcap with the patches provided in the LINX release
+    <code>patch/</code> directory.</li>
+  <li>Start tcpdump and configure it to listen on linx0.</li>
+</ol>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="configuration">7. LINX Kernel Module Configuration</h2>
+
+<p>Parameters can be passed to the LINX kernel module at load time. Example:</p>
+<pre>   $ insmod linx.ko linx_max_links=64</pre>
+
+<p></p>
+
+<p>To list available parameters and types, the modinfo command can be used:</p>
+<pre>   $ modinfo -p linx.ko</pre>
+
+<p></p>
+
+<p>The following parameters can be passed to the LINX kernel module:</p>
+
+<p><strong>linx_max_links</strong></p>
+
+<p>The maximum number of links that can be established to remote nodes. When
+the limit is reached, LINX will refuse to create new links. The default value
+is 32 and the maximum value is 1024.</p>
+
+<p><strong>linx_max_sockets_per_link</strong></p>
+
+<p>The maximum number of endpoints (sockets) that are allowed to communicate
+over one link. If the limit is exceeded, the link will be disconnected and
+reestablished. The value must be a power of 2. The default value is 1024 and
+the maximum value is 65536.</p>
+
+<p><strong>linx_max_spids</strong></p>
+
+<p>The maximum number of LINX endpoints (sockets) that can be created. When the
+limit is reached, LINX will refuse to create new endpoints. The value must be a
+power of 2. The default value is 512 and the maximum value is 65536.</p>
+
+<p><strong>linx_max_attrefs</strong></p>
+
+<p>The maximum number of pending attaches. When the limit is reached, attach()
+calls will fail. The value needs to be a power of 2. The default value is 1024
+and the maximum value is 65536.</p>
+
+<p><strong>linx_max_tmorefs</strong></p>
+
+<p>The maximum number of timeout references. When the limit is reached, <a
+href="../html/linx_request_tmo.3.html"><code>linx_request_tmo()</code></a> will
+fail. The value must be a power of 2. The default value is 1024 and the maximum
+value is 65536.</p>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="statistics">8. LINX Statistics</h2>
+
+<h3 id="per-endpoint_stat">8.1 Per-endpoint Statistics</h3>
+
+<p>Statistics per endpoint can be enabled at compile-time for the LINX kernel
+module with the <code>-DSOCK_STAT</code> build flag.</p>
+
+<p>Statistics are collected for both ordinary and virtual LINX endpoints, as
+well as for links, independent of which Connection Manager is used. The results
+can be found in the procfs file system in the file
+<code>/proc/net/linx/sockets</code> and are also available through the <a
+href="../html/linx_get_stat.3.html"><code>linx_get_stat()</code></a> function
+call or by using the <code>linxstat -S</code> command.</p>
+
+<p>The following statistics are presented:</p>
+
+<table border="0">
+  <tbody>
+    <tr>
+      <td valign="top">no_recv_bytes</td>
+      <td valign="top">Number of received bytes</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_bytes</td>
+      <td valign="top">Number of sent bytes</td>
+    </tr>
+    <tr>
+      <td valign="top">no_recv_signals</td>
+      <td valign="top">Number of received LINX signals</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_signals</td>
+      <td valign="top">Number of sent LINX signals</td>
+    </tr>
+    <tr>
+      <td valign="top">no_recv_remote_bytes</td>
+      <td valign="top">Number of bytes received from remote endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_remote_bytes</td>
+      <td valign="top">Number of bytes sent to remote endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_recv_remote_signals</td>
+      <td valign="top">Number of LINX signals received from remote
+      endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_remote_signals</td>
+      <td valign="top">Number of LINX signals sent to remote endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_recv_local_bytes</td>
+      <td valign="top">Number of bytes received from local endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_local_bytes</td>
+      <td valign="top">Number of bytes sent to local endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_recv_local_signals</td>
+      <td valign="top">Number of LINX signals received from local
+      endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_sent_local_signals</td>
+      <td valign="top">Number of LINX signals sent to local endpoints.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_queued_bytes</td>
+      <td valign="top">Number of bytes waiting in the receive queue of the
+        endpoint.</td>
+    </tr>
+    <tr>
+      <td valign="top">no_queued_signals</td>
+      <td valign="top">Number of LINX signals waiting in the receive queue of
+        the endpoint.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p></p>
+
+<p>A sent LINX signal is shown as queued until the destination application has
+received it with a <a
+href="../html/linx_receive.3.html"><code>linx_receive()</code></a> call (or a
+<code>recvfrom()</code> / <code>recvmsg()</code> if using the socket interface
+directly). When a hunt for a remote endpoint is resolved, the hunt reply will
+be counted as a &ldquo;received remote&rdquo; LINX signal even though the hunt
+reply itself is not sent over the link. From the LINX endpoints perspective,
+the hunt reply is received from a virtual endpoint which represents a remote
+endpoint. The same applies to attach LINX signals from virtual endpoints.</p>
+
+<p>When a LINX endpoint is destroyed, so are the statistics for that endpoint.
+If an application needs to save the statistics, it should do so before calling
+<a href="../html/linx_close.3.html"><code>linx_close()</code></a> (or
+<code>close()</code> if using the socket interface directly).</p>
+
+<p></p>
+
+<h3 id="ethernet_cm_stat">8.2 Ethernet CM Statistics</h3>
+
+<p>Statistics can be enabled at compile-time for the LINX Ethernet Connection
+Manager by using the following flags when building LINX:</p>
+<dl>
+  <dt><b>-DSTAT_SEND_PKTS</b></dt>
+    <dd>Shows the number of sent packets per link, stored in
+      <code>/proc/net/linx/cm/eth/send_pkts</code></dd>
+  <dt><b>-DSTAT_RECV_PKTS</b></dt>
+    <dd>Shows the number of received packets per link, stored in
+      <code>/proc/net/linx/cm/eth/recv_pkts</code></dd>
+  <dt><b>-DSTAT_SEND_PKTS</b></dt>
+    <dd>Shows the number of sent packets per link, stored in
+      <code>/proc/net/linx/cm/eth/send_pkts</code></dd>
+  <dt><b>-DSTAT_RECV_PKTS</b></dt>
+    <dd>Shows the number of received packets per link, stored in
+      <code>/proc/net/linx/cm/eth/recv_pkts</code></dd>
+  <dt><b>-DSTAT_SEND_RETRANS</b></dt>
+    <dd>Shows the number of received packets per link, stored in
+      <code>/proc/net/linx/cm/eth/send_retrans</code></dd>
+  <dt><b>-DSTAT_BASIC</b></dt>
+    <dd>Turns on all of the above statistics fields.</dd>
+</dl>
+
+<div class="pagebreak">
+</div>
+<hr />
+
+<h2 id="more_information">9. Where to Find More Information</h2>
+
+<h3 id="reference_doc">9.1 Reference Documentation </h3>
+
+<p>The reference manuals can be found under the <code>doc/</code> directory, as
+MAN pages in the <code>man1</code> - <code>man8</code> subdirectories. The <a
+href="../html/linx.7.html">linx(7)</a> manual page is the top document. To be
+able to read the reference documentation with the <code>man</code> command in
+Linux, the path to the LINX <code>doc/</code> directory needs to be added to
+the <code>MANPATH</code> environment variable. Alternatively, <a
+href="../index.html">index.html</a> in the LINX <code>doc/</code> directory
+contains pointers to HTML and PDF versions of the reference manual pages, which
+have been generated from the man page format files.</p>
+
+<p><b>Note:</b> The PDF version of all MAN pages are collected in one pdf file,
+<a href="../linxmanpages.pdf">linxmanpages.pdf</a>.</p>
+
+<p>The LINX API is described in the reference manual pages, see <a
+href="../html/linx.h.3.html">linx.h(3)</a> and <a
+href="../html/linx_types.h.3.html">linx_types.h(3)</a>.</p>
+
+<p>How to use the LINX socket interface directly is described in the <a
+href="../html/linx.7.html#sect7">linx(7)</a> manual page.</p>
+
+<p>The <a href="../html/mklink.1.html">mklink(1)</a>, <a
+href="../html/rmlink.1.html">rmlink(1)</a>, <a
+href="../html/mkethcon.1.html">mkethcon(1)</a>, <a
+href="../html/rmethcon.1.html">rmethcon(1)</a>, <a
+href="../html/mktcpcon.1.html">mktcpcon(1)</a>, <a
+href="../html/rmtcpcon.1.html">rmtcpcon(1)</a> commands, the <a
+href="../html/linxdisc.8.html">linxdisc(8)</a> daemon and the <a
+href="../html/linxstat.1.html">linxstat(1)</a> command and the soon to be
+depricated <a href="../html/linxcfg.1.html">linxcfg(1)</a> command are also
+described in reference manual pages.</p>
+
+<p></p>
+
+<h3 id="linx_protocols">9.2 LINX Protocols</h3>
+
+<p>Specifications of all LINX protocols for inter-node communication are found
+in the separate <a
+href="../linxprotocols/book-linx-protocols-html/index.html">LINX protocols
+(HTML)</a> document. (<a href="../book-linx-protocols.pdf">PDF version</a>)</p>
+
+<p></p>
+
+<h3 id="linx_project">9.3 The LINX Project</h3>
+
+<p>The LINX project can be found on SourceForge on the following addresses:</p>
+<ul>
+  <li><a href="http://linx.sourceforge.net/">http://linx.sourceforge.net</a> -
+    LINX Home page. </li>
+  <li><a
+    href="http://sourceforge.net/projects/linx">http://sourceforge.net/projects/linx</a>
+    - latest software version and more information. </li>
+</ul>
+
+<p>Email: <a href="mailto:linx@enea.com">linx@enea.com</a></p>
+
+<p></p>
+
+<h3 id="other_information">9.4 Other Information</h3>
+
+<p>See <a href="http://www.enea.com/">www.enea.com</a> for more general
+information about LINX. You will find a LINX Datasheet, the LINX protocols
+described, Questions &amp; Answers about LINX and other information. </p>
+</body>
+</html>

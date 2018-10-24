@@ -1,0 +1,138 @@
+LINX benchmark example application
+======================================
+
+This is a example benchmark application using the LINX IPC.
+
+The client(s) and the server may be executed on the same machine or
+on different machines interconnected by LINX.
+
+The different benchmark test are explained below.
+
+
+How to build
+------------
+
+Build the LINX API library:
+
+   cd <top level LINX directory>
+   make lib
+
+Build the example:
+
+   cd <top level LINX directory>
+   make example/linx_bmark
+
+The build results in on executable:
+
+   example/bin/linx_bmark
+
+See the README in the LINX top level directory for information on
+how to build the LINX kernel module and the linxcfg command util.
+
+
+How to run the linx_bmark example
+-------------------------------------
+
+If the target machines are not the same as the build hosts, download
+the LINX kernel module, the linxcfg command and the linx_bmark
+application to the targets and login as root. Modify the paths below
+as appropriate.
+
+On each targets, install the LINX kernel module:
+
+   insmod net/linx/linx.ko
+
+On each target, establish a link using the linxcfg command:
+
+   bin/linxcfg create <macaddr> <device> <linkname>
+
+On target 1, start the server:
+
+   example/bin/linx_bmark -S[<name>]
+
+   The -S means that this is the server. A server name can optionally be
+   provided, otherwise a default name is used. This name must be used by
+   the client to hunt on.
+
+
+On target 2, start the client:
+
+   ./linx_bmark [ -p<path> ] [ -n<loopCnt> ] [ -l ] testcase options
+
+   If the linx_bmark server is located on a remote node, the full huntpath
+   <path> must be provided. If the linx_bmark server is running locally
+   and was given another name than the default, the <path> shall include the
+   server name. -l specifes usage of the LINX API during the test.
+   If LINX API is not used the LINX socket API is accessed directly.
+
+   A test is repeated <loopCnt> times and statistics are presented. If not
+   provided default is 10.
+
+   Testcases:
+
+   "-a" 
+
+   The time between the termination and the reception of the attach signal
+   is measured. Repeat <loopCnt> times, statistics are presented. 
+
+
+   "-c1 [ -m<msgSize> ]"
+
+   Latency: The roundtrip time for sending a signal to a slave and back is 
+   measured. The size of the message can be provided in <msgSize>. Default 
+   is 2048 bytes.
+   
+
+   "-c2 [ -m<msgSize> ] [ -b<burstCnt> ]"
+
+   Burst: The time for receiving <burstCnt> number of signals of size <msgSize>
+   is measured. Default is message size of 2048 bytes and burst count of
+   40 messages.
+   NOTE: Make sure to increase the size of the defer queue of the link if large 
+         message of burst sizes are configured to avoid defer queue exhaustion.
+         The size of the defer queue is configured using the linxcfg tool.
+
+   "-c3 [ -s<start message size> ][ -e<end message size> ] [ -i<number of iterations> ]"
+
+   Latency: The total time for sending <loopCnt> number of signals to
+   a slave and back is measured. For each iteration the size of the signal
+   is increased, starting from <start message size> for the first
+   iteration and then growing until it reaches <end message size>.
+   The latency and CPU load is presented for each iteration. Default
+   for start message size is 1000 bytes, end message size 65536
+   bytes and 10 iterations.
+
+
+   "-c4 [ -s<start message size> ] [ -e<end message size> ] [ -i<number of iterations> ]
+        [ -b<burstCnt> ]"
+
+   Burst: The total time for receiving <burstCnt> number of signals is
+   measured. For each iteration the size of the signals is increased
+   starting from start message size for the first iteration and then
+   growing until it reaches end message size. The average time plus CPU
+   load is presented for each iteration.
+   NOTE: Make sure to increase the size of the defer queue of the link if large 
+         message of burst sizes are configured to avoid defer queue exhaustion.
+         The size of the defer queue is configured using the linxcfg tool.
+
+   "-c5 [ -m<msgSize> ] [ -t<noOfProcessPairs> ]"
+
+   Throughput: Measure the time of sending and receiving <loopCnt> number of signals 
+   of size <msgSize> between <noOfProcessPairs> parallel process pairs.
+   Default is message size of 2048 bytes and number of spawns are 32.
+
+Example
+-------
+
+   Target 1:
+
+   root@target1> insmod net/linx/linx.ko
+   root@target1> bin/linxcfg create 00:E0:0C:00:00:FD eth0 target2
+   root@target1> example/bin/linx_bmark -S
+   
+
+   Target 2:
+
+   root@target2> insmod net/linx/linx.ko
+   root@target2> bin/linxcfg create 00:30:07:04:02:5E eth0 target1
+   root@target2> example/bin/linx_bmark -p target1/linx_bmark -n500 -c2 -m50 -b1000

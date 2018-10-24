@@ -1,0 +1,1 @@
+AM_CFLAGS = -std=gnu99 -Wall -pedantic -Wstrict-aliasing=2 -O2 -DNDEBUG

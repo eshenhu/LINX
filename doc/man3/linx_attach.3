@@ -1,0 +1,208 @@
+.TH LINX_ATTACH 3 "2006-07-30" 1.0 "LIBLINX"
+.SH NAME
+linx_attach() - Attach to and supervise a LINX endpoint
+.br
+linx_detach() - Detach from an attached LINX endpoint
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "LINX_OSATTREF linx_attach(LINX *" linx ", union LINX_SIGNAL **" sig ", LINX_SPID " spid ");"
+.br
+
+.BI "int linx_detach(LINX *" linx ", LINX_OSATTREF *" attref ");"
+
+.SH DESCRIPTION
+
+.BR linx_attach "()"
+is used to supervise another LINX endpoint. When the other endpoint
+is closed or becomes unavailable, an attach signal is sent to the 
+supervising LINX endpoint
+.IR linx
+as a notification.
+If a signal
+.I sig
+is provided, this signal will be received when the attach is triggered.
+If
+.I sig
+is NULL, the default LINX attach signal with signal number LINX_OS_ATTACH_SIG
+is received instead.
+The linx_attach() call consumes the signal, taking over its ownership,
+and sets the 
+.I sig
+pointer to LINX_NIL. The signal is consumed if an error occurs too. If
+.I sig
+is corrupt,
+.BR abort "(3)"
+is called.
+.br
+
+.BR linx_detach "()"
+is used to detach from an attached LINX endpoint. It's an error to detach from a
+LINX endpoint more than once or to detach from a LINX endpoint after the attach
+signal has been received. It is not an error to detach if the attach signal is
+waiting in the receive queue of the LINX endpoint. To prevent multiple detaches,
+linx_detach() sets the attref pointer to LINX_ILLEGAL_ATTREF.
+.br
+
+.I linx
+is the handle of the LINX endpoint.
+.br
+
+.I spid
+is the identifier of the LINX endpoint to supervise.
+.br
+
+.I sig
+is either NULL or a user defined LINX signal.
+.br
+
+.I attref
+is the LINX_OSATTREF attach reference obtained from 
+.BR linx_attach "()."
+
+.SH "RETURN VALUE"
+.BR linx_attach "()" 
+returns an attach reference (LINX_OSATTREF) when successful.
+This attach reference can be used 
+to cancel the attach (detach) after the attach is done.
+.BR linx_detach "()"
+returns 0 on success.
+.br
+
+On failure,
+.BR linx_attach "()"
+returns LINX_ILLEGAL_ATTREF and
+.BR linx_detach "()"
+returns -1, and
+.I errno 
+is set appropriately.
+.SH ERRORS
+.BR EBADF ", " ENOTSOCK
+The
+.IR linx
+handle refers to an invalid socket descriptor.
+.br
+
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH "EXAMPLE"
+In this example the server attaches to the client and tells the client to
+exit and waits for the attach signal.
+
+.nf
+Server:
+
+#include <linx.h>
+
+#define CLIENT_DONE_SIG 0x1234
+
+int
+main (int argc, char *argv[]) 
+{
+  LINX *linx;
+  LINX_SPID client;
+  union LINX_SIGNAL *sig;
+  const LINX_SIGSELECT sel_hunt_sig[] = { 1, LINX_OS_HUNT_SIG };
+  const LINX_SIGSELECT sel_att_sig [] = { 1, LINX_OS_ATTACH_SIG };
+
+  /* Create a LINX endpoint with huntname "attacher" */
+  linx = linx_open("attacher", NULL, 0);
+
+  /* Hunt for the client */
+  linx_hunt(linx, "client", NULL);
+
+  /* Receive hunt signal */
+  linx_receive(linx, &sig, sel_hunt_sig);
+
+  /* Retrive the clients spid */
+  client = linx_sender(linx, &sig)
+
+  /* Free the hunt signal */
+  linx_free_buf(linx, &sig);
+
+  /* Attach to the client */
+  linx_attach(linx, client, NULL);
+
+  /* Create "done" signal */
+  sig = linx_alloc(linx, sizeof(LINX_SIGSELECT), CLIENT_DONE_SIG);
+
+  /* Send "done" signal to client */
+  linx_send(linx, &sig, client);
+
+  /* Wait for the attach signal */
+  linx_receive(linx, &sig, sel_att_sig);
+
+  /* Close the LINX endpoint */
+  linx_close(linx);
+
+  return 0;
+}
+
+Client:
+
+#include <linx.h>
+
+int
+main (int argc, char *argv[])
+{
+  LINX *linx;
+  union LINX_SIGNAL *sig;
+  const LINX_SIGSELECT sel_done_sig[] = { 1, CLIENT_DONE_SIG };
+  
+  /* Open a LINX endpoint with huntname "client" */
+  linx = linx_open("client", NULL, 0);
+
+  /* Wait for server to send "done" signal */
+  linx_receive(linx, &sig, sel_done_sig);
+
+  /* Close the LINX endpoint - this will trigger the attach */
+  linx_close(linx);
+
+  return 0;
+}
+
+.fi
+.SH "SEE ALSO"
+.BR linx "(7), " 
+.BR linx_attach "(3), " 
+.BR linx_close "(3), " 
+.BR linx_detach "(3), " 
+.BR linx_hunt "(3), " 
+.BR linx_send "(3)" 
+.SH "AUTHOR"
+Enea LINX team
+.SH "COPYRIGHT"
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

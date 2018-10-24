@@ -1,0 +1,106 @@
+.TH LINX_GET_NAME 3 "2006-07-30" 1.0 "LIBLINX"
+.SH NAME
+linx_get_name() - Get the name of another LINX endpoint
+.br
+linx_free_name() - Free the name returned by
+.BR linx_get_name "(3)"
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_get_name(LINX *" linx ", LINX_SPID " spid ", char **" name ");"
+.br
+
+.BI "int linx_free_name(LINX *" linx ", char **" name ");"
+
+.SH DESCRIPTION
+Get the full hunt name of the LINX endpoint associated with the
+.I
+spid
+binary identifier (spid). The hunt name is a string which may include
+a path of link names if the LINX endpoint is located on a remote node,
+e.g. "LinkToA/LinkToB/LinkToC/EndpointName".
+
+.I linx
+is the handle of the own LINX endpoint.
+.br
+
+.I spid 
+is the spid of the LINX endpoint for which the name is requested.
+.br
+
+.I name
+is a pointer to a hunt name buffer on successful return, otherwise NULL.
+Unless name is NULL on return, the name buffer must be freed with
+.BR linx_free_name "(3), "
+when it is no longer needed.
+
+
+.br
+
+.SH "RETURN VALUE"
+On success, 0 is returned and
+.I name
+contains a pointer to a buffer containing the huntname. 
+The user is responsible for freeing the buffer with 
+.BR linx_free_name "(3)."
+.br
+In case of failure, -1 will be returned by both calls 
+.I errno 
+will be set. 
+.SH ERRORS
+.BR EBADF
+The
+.IR linx
+handle refers to an invalid socket descriptor.
+.br
+
+.B EINVAL
+The name parameter is NULL.
+.br
+
+.B ENOMEM
+Insufficient memory is available.
+.br
+
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH SEE ALSO
+.BR linx "(7), " linx_open "(3), "
+.BR malloc "(3), " free "(3)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

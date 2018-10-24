@@ -1,0 +1,415 @@
+BODY
+{
+       	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	margin: 3px;
+	margin-right: 6px;
+}
+
+P.TITLE
+{
+	width: 100%;
+	text-align: center;
+}
+
+LI > P
+{
+  margin: 3px;
+}
+
+LI P
+{
+  margin: 3px;
+}
+
+A,
+A:visited
+{
+        text-decoration: none;
+        color: #a9001e;
+}
+ 
+A:hover,
+A:visited:hover
+{
+         color: #ff0000;
+}
+
+TH
+{
+        color: #000000;
+        font-size: 12px;
+}
+
+TD
+{
+        background-color: transparent;
+	font-size: 10pt;
+}
+
+HR
+{
+        display: none;
+}
+
+DD
+{
+	margin-left: 14px;
+}
+
+DT
+{
+	margin-left: 0px;
+}
+
+SPAN.CHAPTER A,
+SPAN.APPENDIX A,
+SPAN.PREFACE A,
+SPAN.PART A,
+SPAN.INDEX A,
+SPAN.GLOSSARY A
+{
+	font-weight: bold;
+}
+
+SPAN.APPENDIX:before
+{
+	content: "Appendix ";
+	font-weight: bold;
+	font-size: 11px;
+	color: #a9001e;
+}
+
+DIV.ABSTRACT
+{
+        border: solid 2px;
+        padding-left: 10pt;
+        padding-right: 10pt;
+}
+
+BLOCKQUOTE.BLOCKQUOTE
+{
+	text-align: center
+}
+
+
+PRE.SCREEN
+{
+        color: #000000;
+        font-family:monospace;
+        font-size: 12px;
+        white-space: pre;
+        width: 100%;
+        background-color: #dddddd;
+        padding-left: 2pt;
+        border: 0pt;
+}
+
+
+PRE.PROGRAMLISTING, PRE.LITERALLAYOUT
+{
+        color: #000000;
+        font-family:monospace;
+        font-size: 12px;
+        white-space: pre;
+        width: 100%;
+        background-color: #dddddd;
+        padding-left: 2pt;
+        border: 0pt;
+}
+
+PRE.SCREEN A, 
+PRE.PROGRAMLISTING A, 
+PRE.LITERALLAYOUT A,
+PRE.SCREEN A:visited, 
+PRE.PROGRAMLISTING A:visited, 
+PRE.LITERALLAYOUT A:visited
+{
+	font-family:monospace;
+	color:#a9001e;
+}
+
+PRE.SCREEN A:hover, 
+PRE.PROGRAMLISTING A:hover, 
+PRE.LITERALLAYOUT A:hover,
+PRE.SCREEN A:visited:hover, 
+PRE.PROGRAMLISTING A:visited:hover, 
+PRE.LITERALLAYOUT A:visited:hover
+{
+	font-family:monospace;
+	color:#ff0000;
+}
+
+H1
+{
+        color: #555555;
+        background-color: transparent;
+        font-variant: small-caps;
+        border: 1px;
+        padding: 0px;
+        font-size: 12px;
+        margin-bottom: 2px;
+}
+
+H1.TITLE
+{
+        color: #555555;
+        background-color: transparent;
+        font-variant: normal;
+        width: 100%;
+        padding: 2px;
+        padding-top: 2px;
+        padding-bottom: 0px;
+        font-size: 18px;
+        font-weight: bold;
+}
+
+H2.TITLE
+{
+        color: #555555;
+        background-color: transparent;
+        font-variant: small-caps;
+        border: 1px;
+        padding: 0px;
+        font-size: 13px;
+        margin-bottom: 2px;
+}
+
+
+DIV.H1.TITLE:before
+{
+    position:fixed;
+    top:30px;
+    right:5px;
+}
+
+.TITLE a,
+.TITLE a:active
+{
+        color: #a9001e; 
+        text-decoration: none;
+}
+
+.TITLE a:visited
+{
+        color: #555555; 
+        text-decoration: none;
+}
+
+DIV.NAVHEADER
+{
+        color: #000000;
+        border: 1px solid #a9001e;
+}
+
+DIV.NAVHEADER TABLE
+{
+       border: 0px;
+}
+
+DIV.NAVHEADER A
+{
+        color: #a9001e;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 0px;
+}
+
+DIV.NAVHEADER A:hover,
+DIV.NAVFOOTER A:hover
+{
+        color: #ff0000;
+}
+
+DIV.NAVFOOTER
+{
+        color: #000000;
+        margin-top: 5px;
+        border: 1px solid #a9001e;
+}
+
+DIV.NAVFOOTER A
+{
+        color: #a9001e;
+        font-size: 12px;
+        font-weight: bold;
+}
+
+
+DIV.NAVFOOTER TABLE
+{
+       border: 0px;
+}
+
+DIV.NAVFOOTER TABLE td
+{
+	font-size: 11px;
+}
+
+H2
+{
+        color: #555555;
+        font-size: 13px;
+        width: 100%;
+        background-color: #ffffff;
+        padding: 2px
+}
+
+H3
+{
+        color: #000000;
+        font-size: 12px;
+        width: 100%;
+        background-color: #ffffff;
+        padding: 2px
+        font-weight: bold;
+}
+
+H4
+{
+        color: #000000;
+        font-size: 11px;
+        font-weight: bold;
+        width: 100%;
+        background-color: #ffffff;
+        padding: 2px
+}
+
+
+TABLE.IMPORTANT
+{
+        font-style:italic;
+        border: solid 2px #ff0000;
+        width: 70%;
+        margin-left: 15%;       
+}
+
+TABLE.CAUTION
+{
+        font-style:italic;
+        border: ridge 2px #ffff00;
+        width: 70%;
+        margin-left: 15%;       
+}
+
+TABLE.NOTE
+{
+        font-style:italic;
+        border: solid 1px #000000;
+        width: 70%;
+        margin-left: 15%;       
+}
+
+TABLE.TIP
+{
+        font-style:italic;
+        border: solid 1px #000000;
+        width: 70%;
+        margin-left: 15%;       
+}
+
+TABLE.WARNING
+{
+        font-style:italic;
+        font-weight: bold;
+        border: ridge 4px #ff0000;
+        width: 70%;
+        margin-left: 15%;       
+}
+
+TABLE
+{
+        border: 1px #000000;
+	border-top: 1px solid #000000; 
+	border-bottom: 1px solid #000000;
+	border-left: 1px solid #000000; 
+        border-right: 1px solid #000000;
+        border-collapse: collapse;
+}
+
+TABLE table
+{
+	 border: 1px #bbbbbb;
+	 border-top: 1px solid #bbbbbb; 
+	 border-bottom: 1px solid #bbbbbb;
+	 border-left: 1px solid #bbbbbb; 
+         border-right: 1px solid #bbbbbb;
+	 border-collapse: collapse;
+}
+
+TABLE table td
+{
+	 border: 1px #bbbbbb;
+	 border-top: 1px solid #bbbbbb; 
+	 border-bottom: 1px solid #bbbbbb;
+	 border-left: 1px solid #bbbbbb; 
+         border-right: 1px solid #bbbbbb;
+	 border-collapse: collapse;
+}
+
+DIV.VARIABLELIST
+{
+        font-style: normal;
+        font-weight: normal;
+        padding-left: 20px;
+}
+
+.VARLISTENTRY
+{
+        font-weight: bold;
+        margin-top: 10px;
+        color: #ffffff ;
+        background-color: #a0a0d0;
+        border: solid 1px #606090;
+        padding: 1px
+}
+
+DIV.EXAMPLE, DIV.TOC
+{
+        padding-right: 10px;
+        color: #000000;
+        background-color: #ffffff;
+}
+
+DIV.TOC
+{
+        margin-left: 15px;
+        margin-right: 15px;
+}
+
+DIV.TOC A,
+DIV.TOC A:visited
+{
+	color: #a9001e;
+	font-size: 11px;
+}
+
+
+DIV.TOC A:hover,
+DIV.TOC A:visited:hover
+{
+         color: #ff0000;
+}
+
+DIV.SECT1,
+DIV.SECT2,
+DIV.SECT3
+{
+        margin-left: 15px;
+        backgound-color: #0000ff;
+}
+
+.baseline
+{
+	font-size: 10px;
+	font-style: italic;
+	color: #000066;
+	margin-left: 5px;
+}
+
+.headerbaseline
+{
+	font-size: 10px;
+	font-style: italic;
+	color: #000000;
+}

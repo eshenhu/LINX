@@ -1,0 +1,213 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>5.1 Protocol Descriptions</title><link rel="stylesheet" href="html.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><meta name="keywords" content=""><link rel="start" href="title.html" title="LINX Protocols"><link rel="up" href="eth_cm_manager.html" title="5. Enea LINX Ethernet Connection Manager"><link rel="prev" href="eth_cm_manager.html" title="5. Enea LINX Ethernet Connection Manager"><link rel="next" href="linxdisc-daemon.html" title="5.2 LINX Discovery Daemon"><base target="body"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><td colspan="2" align="left"><span class="headerbaseline">Document Version 21</span></td><td align="right"><IMG src="images/enea_logo.png"></td></tr><tr><td colspan="3" align="center" valign="bottom"><h2 class="title"><a name="book_linx_proto"></a>LINX Protocols</h2></td></tr><tr><td width="20%" align="left"><a accesskey="p" href="eth_cm_manager.html">Prev</a> </td><th width="60%" align="center">5. Enea LINX Ethernet Connection Manager</th><td width="20%" align="right"> <a accesskey="n" href="linxdisc-daemon.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="eth_cm-proto-desr"></a>5.1 Protocol Descriptions</h2></div></div></div><p>Enea LINX PDUs are stacked in front of, possible, user data to form
+    an Enea LINX Ethernet packet. All PDUs contain a field next header which
+    contain the protocol number of following headers or the value -1 (1111b)
+    if this is the last PDU. All headers except Enea LINX main header are
+    optional. Everything from the transmit() down call, including possible
+    control plane signaling, from the RLNH layer is sent reliably as user
+    data. The first field in all headers is the next header field, having this
+    field in the same place simplifies implementation and speeds up
+    processing.</p><p>If a malformed packet is received the Ethernet Connection Manager
+    resets the connection and informs RLNH.</p><p>When the Ethernet Connection Manager encounters problems which
+    prevents delivery of a message or part of a message it must reset the
+    connection. Notification of RLNH is implicit in the Ethernet CM, when the
+    peer replies with RESET or, if the peer has crashed, the Connection
+    Supervision timer fires.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2613242"></a>5.1.1 Enea LINX Ethernet Connection Manager Headers</h3></div></div></div><p>Version 3 of the Enea LINX Ethernet Connection Manager protocol
+      defines these headers.</p><div class="table"><a name="ethcm-protonumbers"></a><p class="title"><b>Table 5.1 Ethernet Connection Manager Protocol Headers</b></p><div class="table-contents"><table summary="Ethernet Connection Manager Protocol Headers" cellpadding="5" border="1"><colgroup><col><col><col></colgroup><tbody><tr><td>Protocol number</td><td>Value</td><td>Definition</td></tr><tr><td>ETHCM_COREID</td><td> </td><td>Coreid header. Is used only in multicore
+              enviroment.</td></tr><tr><td>ETHCM_MAIN</td><td> </td><td>Main header sent first in all Enea LINX packets.</td></tr><tr><td>ETHCM_CONN</td><td> </td><td>Connect header. Used to establish and tear down
+              connections.</td></tr><tr><td>ETHCM_UDATA</td><td> </td><td>User data header. All messages generated outside the
+              Connection Manager are sent as UDATA.</td></tr><tr><td>ETHCM_FRAG</td><td> </td><td>Fragment header. Messages bigger than the MTU are sent
+              fragmented and PDUs following the first carries the ETHCM_FRAG
+              header instead of ETHCM_UDATA.</td></tr><tr><td>ETHCM_ACK</td><td> </td><td>Reliability header. Carries seqno and ackno. ACK doubles
+              as empty acknowledge PDU and ACK-request PDU, in sliding window
+              management and connection supervision.</td></tr><tr><td>ETHCM_NACK</td><td> </td><td>Request retransmission of one or more packets.</td></tr><tr><td>ETHCM_NONE</td><td> </td><td>Indicates that the current header is the last in the
+              PDU.</td></tr></tbody></table></div></div><br class="table-break"><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2613409"></a>5.1.1.1 ETHCM_COREID Header</h4></div></div></div><p>The ETHCM_COREID header is used only in a multicore
+        enviroment.It carries the destination and the source coreid. If the
+        connection is established in a singlecore enviroment this header is
+        missing.</p><div class="table"><a name="id2613422"></a><p class="title"><b>Table 5.2 ETHCM Coreid header</b></p><div class="table-contents"><table summary="ETHCM Coreid header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td colspan="4" align="center">Res</td><td colspan="8" align="center">Dcoreid</td><td colspan="8" align="center">Scoreid</td><td colspan="8" align="center">Res</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">Res</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Dcoreid</span></dt><dd><p>Destination coreid, specify the remote coreid.</p></dd><dt><span class="term">Scoreid</span></dt><dd><p>Source coreid, specify the local coreid.</p></dd><dt><span class="term">Res</span></dt><dd><p>Reserved for future use, must be 0.</p></dd></dl></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2613940"></a>5.1.1.2 ETHCM_MAIN Header</h4></div></div></div><p>The ETHCM_MAIN header is sent first in all Enea LINX PDU's. It
+        carries protocol version number, connection id, and packet size.
+        Connection ID is negotiated when a connection is establish and is used
+        to lookup the destination for incoming packets.</p><div class="table"><a name="id2613954"></a><p class="title"><b>Table 5.3 ETHCM Main header</b></p><div class="table-contents"><table summary="ETHCM Main header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td colspan="3" align="center">Ver</td><td colspan="2" align="center">Res</td><td colspan="8" align="center">Conn_ID</td><td align="center">R</td><td colspan="14" align="center">Packet
+                size</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">Ver</span></dt><dd><p>Enea LINX Ethernet Connection Manager protocol version.
+              Version 3 decimal is currently used, 0 is illegal.</p></dd><dt><span class="term">Res</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Conn_ID</span></dt><dd><p>A key representing the connection, used for fast
+              identification of destination of incoming packets.</p></dd><dt><span class="term">R</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Packet size</span></dt><dd><p>Total packet size in bytes including this and all other
+              headers.</p></dd></dl></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2614496"></a>5.1.2 Enea LINX Connect Protocol</h3></div></div></div><p>The Enea LINX Connect Protocol is used to establish a connection
+      on the Connection Manager level between two peers A and B. A Connection
+      Manager will only try to establish a connection or accept connection
+      attempt from a peer if it has been explicitly configured to do. After
+      configuration a CM will maintain connection with the peer until
+      explicitly told to destroy the connection or an un-recoverable error
+      occurs.</p><p>If a Connect-message is received, with a version number different
+      from 2, the Ethernet CM refuses to connect.</p><p>The Connect Protocol determines Connection IDs to be used for this
+      connection. Connection IDs are small keys used by receivers to quickly
+      lookup a packets destination. Each side selects the Connection ID to be
+      used by the peer when sending packets over the connection. The peer
+      saves the ID and will use it for all future communication. If a node has
+      a lot of connections it may run out of available Connection IDs. In this
+      case the node sends Connection ID 0, which means no Connection ID and
+      reverts to the slower MAC-addressing mode to determine destination for
+      incoming packets.</p><p>A window size options may be sent in the CONNECT-header to
+      indicate how the sender configuration deviates from the default.
+      Deviations from default values are configured per connection in the
+      create_conn()-call.</p><div class="figure"><a name="id2614538"></a><p class="title"><b>Figure 5.1 Successful Connect</b></p><div class="figure-contents"><div class="mediaobject"><img src="images/linxprotocols-connect.png" alt="Successful Connect"></div></div></div><p><br class="figure-break"></p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2614574"></a>5.1.2.1 Connect Protocol</h4></div></div></div><p>In the following protocol description the side initiating the
+        connection is called A and the side responding to the request is
+        called B. All protocol transitions are supervised by a timer, if the
+        timer fires before the next step in the protocol have been completed
+        the state machine reverts to state disconnected.</p><p>The Connect Protocol is symmetrical, there is no master and both
+        sides try to initiate the connection. Collisions, i.e. when the
+        initial CONNECT PDU is sent simultaneously from both sides, are
+        handled by the protocol and the connection restarted after a
+        randomized back of timeout.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2614599"></a>5.1.2.2 Connect Protocol Description</h4></div></div></div><p>Unless a Connection Manager has been configured to create a
+        connection to a peer no messages are sent and the Connection Manager
+        doesn't respond to connection attempts.</p><h5><a name="id2614611"></a>A-side</h5><div class="procedure"><ul><li><p>When a Connection Object is created at A by calling
+            create_conn() A starts from DISCONNECTED state, sends a CONNECT
+            PDU to B and enters state CONNECTING_1.</p><div class="orderedlist"><ol type="a" compact><li><p>If tmo, go back to step 1 and try again after a grace
+                period.</p></li><li><p>If B replies with a CONNECT_ACK PDU, move to CONNECTED
+                state, send ACK PDU to B, notify RLNH that a connection have
+                been established, and start the Connection Supervision
+                function.</p></li><li><p>If any other PDU is received from B send RESET and go
+                back to step 1 and try again after a short grace
+                period.</p></li></ol></div></li></ul></div><h5><a name="id2614669"></a>B-side</h5><div class="procedure"><ol type="1"><li><p>After configuration, B waits in state DISCONNECTED for a
+            CONNECT PDU from A.</p><div class="orderedlist"><ol type="a" compact><li><p>If a CONNECT PDU arrives, send a CONNECT_ACK PDU and go
+                to state CONNECTING_2</p></li><li><p>If some other PDU arrives, send RESET to A and go back
+                to step 2.</p></li></ol></div></li><li><p>In state CONNECTING_2, B waits for an ACK PDU from A.</p><div class="orderedlist"><ol type="a" compact><li><p>When CONN_ACK arrives, the connect protocol is complete,
+                the Connection Manager notifies higher layers that a
+                connection have been established, and start the Connection
+                Supervision function.</p></li><li><p>If some other PDU is received or the timer fires, send
+                RESET and go to state DISCONNECTED</p></li></ol></div></li></ol></div><p>Allowed messages and state changes are summarized in this state
+        diagram. The notation [xxx/yyy] means: event xxx causes action
+        yyy.</p><div class="figure"><a name="id2614761"></a><p class="title"><b>Figure 5.2 Connection protocol state diagram</b></p><div class="figure-contents"><div class="mediaobject"><img src="images/linxprotocols-connect-states.png" alt="Connection protocol state diagram"></div></div></div><br class="figure-break"><div class="figure"><a name="id2614798"></a><p class="title"><b>Figure 5.3 Disconnect state diagram</b></p><div class="figure-contents"><div class="mediaobject"><img src="images/linxprotocols-disconnect-states.png" alt="Disconnect state diagram"></div></div></div><br class="figure-break"></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2614836"></a>5.1.2.3 Feature Negotiation</h4></div></div></div><p>A Feature Negotiation <a class="indexterm" name="id2614844"></a>string is sent during connection establishment. The
+        string is sent in the CONNECT ACK and the ACK type of ETHCM_CONN
+        messages; the other messages contain an empty string '\0'). The string
+        contains all feature names and corresponding argument. Only the
+        features used by both peers (the intersection) are enabled. All the
+        features supported by none or one peer (the complement) are disabled
+        by both peers. An optional argument can be specified and It is up up
+        to each feature how the argument is used and how the negotiation of
+        the argument is performed.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2614866"></a>5.1.2.4 ETHCM_CONN Header</h4></div></div></div><p>The Connection header varies in size depending on the size of
+        the address on the media, on Ethernet it is 16 bytes.</p><div class="table"><a name="id2614877"></a><p class="title"><b>Table 5.4 ETHCM Connect header</b></p><div class="table-contents"><table summary="ETHCM Connect header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td colspan="4" align="center">Type</td><td colspan="3" align="center">Size</td><td colspan="4" align="center">Window</td><td colspan="9" align="center">Reserved</td><td colspan="8" align="center">Conn_ID</td></tr><tr><td colspan="32" align="center">Dst media
+                address followed by src media address</td></tr><tr><td colspan="32" align="center">...</td></tr><tr><td colspan="32" align="center">...</td></tr><tr><td colspan="32" align="center">Feature
+                Negotiation string (variable length, null-terminated
+                string)</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">Type</span></dt><dd><table class="simplelist" border="0" summary="Simple list"><tr><td>CONNECT. Start a connect transaction.</td></tr><tr><td>CONNECT ACK. Reply from passive side.</td></tr><tr><td>ACK. Confirm that the connection have been
+                created.</td></tr><tr><td>RESET. Sent if any error occurs. Also sent if the next
+                step in connect protocol fails to complete within allowed
+                time.</td></tr></table></dd><dt><span class="term">Size</span></dt><dd><p>Media address size.</p></dd><dt><span class="term">Window</span></dt><dd><p>Window size. Power of 2, thus Window == 5 means a window
+              of 2<sup>5</sup> == 32 packets.</p></dd><dt><span class="term">Reserved</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Conn_ID</span></dt><dd><p>Use this Connection ID. Informs peer which connection ID
+              to use when sending packets over this connection. Conn ID == 0,
+              means don't use Connection ID.</p></dd><dt><span class="term">Dst and src media addresses</span></dt><dd><p>Dst media address immediately followed by src media
+              address.</p></dd><dt><span class="term">Feature Negotiation string</span></dt><dd><p>String containing feature name and argument pairs.
+              Example: "feature1:arg1,feature2:arg2\0".</p></dd></dl></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2615527"></a>5.1.3 Enea LINX User Data Protocol</h3></div></div></div><p>All messages originating outside the Connection Manger are sent as
+      USER_DATA. There are two types of USER_DATA header. The first type is
+      used for messages not requiring fragmentation and for the first fragment
+      of fragmented messages. The second type is used for all remaining
+      fragments.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2615542"></a>5.1.3.1 User data and Fragmentation Protocol</h4></div></div></div><h5><a name="id2615548"></a>A-side</h5><div class="procedure"><ol type="1"><li><p>Accept a new message from RLNH. Calculate how many fragments
+            are required to send this message.</p></li><li><p>Frag_cnt = 0.</p></li><li><p>For each fragment in the message:</p><div class="orderedlist"><ol type="a" compact><li><p>If first fragment send as USER_DATA else send as
+                FRAG.</p></li><li><p>If only fragment set fragno to -1 else set fragno to
+                frag_cnt and increment frag_cnt.</p></li><li><p>If last fragment set MORE to 0 else set MORE to
+                1.</p></li><li><p>Forward the packet to lower layer for
+                transmission.</p></li><li><p>If last fragment go back to step 1</p></li></ol></div></li></ol></div><h5><a name="id2615634"></a>B-side</h5><div class="procedure"><ol type="1"><li><p>When a USER_DATA or a FRAG packet arrives.</p></li><li><p>If fragno = -1 (0x7fff) deliver() to RLNH since this is a
+            complete message and wait for next packet.</p></li><li><p>If fragno &#8800; -1 find the reassembly queue for this message
+            and add the packet to the tail of the queue (lower layers doesn't
+            emit packets out-of-order). If the packet is the last fragment
+            deliver the complete message to RLNH else wait for next
+            packet.</p></li></ol></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2615678"></a>5.1.3.2 ETHCM_UDATA Header</h4></div></div></div><div class="table"><a name="id2615683"></a><p class="title"><b>Table 5.5 ETHCM User Data header</b></p><div class="table-contents"><table summary="ETHCM User Data header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td align="center">O</td><td colspan="11" align="center">Reserved</td><td align="center">M</td><td colspan="15" align="center">Frag
+                no</td></tr><tr><td colspan="32" align="center">Dst
+                addr</td></tr><tr><td colspan="32" align="center">Src
+                addr</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">O</span></dt><dd><p>OOB bit, the UDATA is out of band.<a class="indexterm" name="id2616181"></a></p></dd><dt><span class="term">Reserved</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">M</span></dt><dd><p>More fragment follows.</p></dd><dt><span class="term">Frag no</span></dt><dd><p>Number of this fragment. Fragments are numbered 0 to
+              (number of fragments - 1). Un-fragmented messages have fragment
+              number -1 (0x7fff).</p></dd><dt><span class="term">Dst addr</span></dt><dd><p>Opaque address (to CM) identifying the receiver.</p></dd><dt><span class="term">Srd addr</span></dt><dd><p>Opaque address identifying the sender.</p></dd></dl></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2616265"></a>5.1.3.3 ETHCM_FRAG Header</h4></div></div></div><div class="table"><a name="id2616270"></a><p class="title"><b>Table 5.6 ETHCM Fragment header</b></p><div class="table-contents"><table summary="ETHCM Fragment header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td colspan="12" align="center">Reserved</td><td align="center">M</td><td colspan="15" align="center">Frag
+                no</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">Reserved</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">M</span></dt><dd><p>More fragment follows.</p></dd><dt><span class="term">Frag no</span></dt><dd><p>Number of this fragment. Fragments are numbered 0 to
+              (number of fragments - 1). Un-fragmented messages have fragment
+              number -1 (0x7fff).</p></dd></dl></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2616764"></a>5.1.4 Enea LINX Reliability Protocol</h3></div></div></div><p>The Connection Manager uses<a class="indexterm" name="id2616773"></a> a selective repeat sliding window protocol with modulo m
+      sequence numbers. The ack header carries sequence and request numbers
+      for all reliable messages sent over the connection. Sequence and Request
+      numbers are 12 bits wide and m is thus 4096.</p><p>In the Selective Retransmit Sliding Window algorithm the B-side
+      explicitly request retransmission of dropped packets and remembers
+      packets received out of order. If the sliding window is full, the A-side
+      queues outgoing packets in a deferred queue. When space becomes
+      available in the window (as sent packets are acknowledged by B) packets
+      are from the front of the deferred queue and sent as usual. A strict
+      ordering is maintained, as long as there are packets waiting in the
+      deferred queue new packets from RLNH are deferred, even if there is
+      space available in the window.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2616801"></a>5.1.4.1 Reliability Protocol Description</h4></div></div></div><p>For sliding window operation the sender A have the variables
+        SN<sub>min</sub> and SN<sub>max</sub>,
+        SN<sub>min</sub> points to the first unacknowledged packet
+        in the sliding window and SN<sub>max</sub> points at the
+        next packet to be sent. In addition the sliding window size is denoted
+        n and size of sequence numbers are modulo <span class="bold"><strong>m</strong></span>. The receiver side B maintains a variable
+        <span class="bold"><strong>RN</strong></span> which denotes the next expected
+        sequence number. In the protocol description, the sequence number and
+        the request number of a packet is called <span class="bold"><strong>sn</strong></span> and <span class="bold"><strong>rn</strong></span>
+        respectively. The module number <span class="bold"><strong>m</strong></span>
+        must be &gt;= <span class="bold"><strong>2n</strong></span>. In version 2 of the
+        Enea LINX Ethernet protocol <span class="bold"><strong>m</strong></span> is 4096
+        and <span class="bold"><strong>n</strong></span> is a power of 2 &lt;= 128.
+        Drawing sequence number from a much larger space than the size of the
+        window allows the reliability protocol to detect random packets with
+        bad sequence numbers.</p><h6><a name="id2616890"></a>At A, the algorithm works as
+        follows:</h6><div class="procedure"><ol type="1"><li><p>Set modulo variables SN<sub>min</sub> and
+            SN<sub>max</sub> to 0.</p></li><li><p>In A if a message is sent from higher layer or there are
+            packets in the defer queue, and (SM<sub>max</sub> -
+            SN<sub>min</sub>) mod <span class="bold"><strong>m</strong></span> &lt; <span class="bold"><strong>n</strong></span>,
+            accept a packet into the sliding window set <span class="bold"><strong>sn</strong></span> to SN<sub>max</sub> and
+            increment SN<sub>max</sub> to
+            (SN<sub>max</sub> + 1) mod <span class="bold"><strong>m</strong></span>. If (SN<sub>max</sub> -
+            SN<sub>min</sub>) mod <span class="bold"><strong>m</strong></span> &gt;= <span class="bold"><strong>n</strong></span>
+            defer sending the packet, i.e. queue the packet until there is
+            room in the sliding window.</p></li><li><p>If an error free frame is received from B containing
+            <span class="bold"><strong>rn</strong></span>, and (<span class="bold"><strong>RN</strong></span> - SN<sub>min</sub>) mod
+            <span class="bold"><strong>m</strong></span> &lt;= (<span class="bold"><strong>RN</strong></span> - SN<sub>max</sub>) mod
+            <span class="bold"><strong>m</strong></span>, set
+            SN<sub>min</sub> to <span class="bold"><strong>RN</strong></span> and remove packets with <span class="bold"><strong>sn</strong></span> &lt;= SN<sub>min</sub> mod
+            <span class="bold"><strong>m</strong></span> from send queue.</p></li><li><p>If a NACK frame is received, retransmit NACKed packets
+            in-order with <span class="bold"><strong>rn</strong></span> set to <span class="bold"><strong>RN</strong></span>.</p></li><li><p>At arbitrary times but within bounded delay after receiving
+            a reliable packet from B and if there are unacknowledged packets
+            in the sliding window, send the first un-acked packet with
+            <span class="bold"><strong>rn</strong></span>, <span class="bold"><strong>RN</strong></span> and the request bit set.</p></li></ol></div><h6><a name="id2617105"></a>The selective repeat algorithm at
+        B:</h6><div class="procedure"><ol type="1"><li><p>Set the modulo <span class="bold"><strong>m</strong></span> variable
+            <span class="bold"><strong>RN</strong></span> to 0.</p></li><li><p>When an error free frame is received from A containing
+            <span class="bold"><strong>sn</strong></span> equal to <span class="bold"><strong>RN</strong></span>, release the packet as well as following
+            queued packets with consecutive <span class="bold"><strong>sn</strong></span> to higher layer and increment <span class="bold"><strong>RN</strong></span> to (last released <span class="bold"><strong>sn</strong></span> + 1) mod <span class="bold"><strong>m</strong></span>.</p></li><li><p>When an error free frame is received from A containing
+            <span class="bold"><strong>sn</strong></span> in the interval <span class="bold"><strong>RN</strong></span> &lt; <span class="bold"><strong>sn</strong></span>
+            &lt; <span class="bold"><strong>RN</strong></span> + <span class="bold"><strong>n</strong></span>, put the packet in sequence number order
+            in the receive queue and send NACK requesting retransmission of
+            sequentially dropped packets to A. The seqno field in the NACK
+            frame shall contain <span class="bold"><strong>RN</strong></span> and the
+            count field shall contain the number of missing packets.</p></li><li><p>At arbitrary times but within a bounded delay after
+            receiving an error free frame from A transmit a frame containing
+            <span class="bold"><strong>RN</strong></span> to A. If there are frames in
+            the receive queue send a NACK indicating missing frames.</p></li></ol></div><p>Note that only user data is sent reliable, i.e. consume sequence
+        numbers. ACKR, NACK and empty ACK are unreliable messages sequence
+        numbers are not incremented as they are sent.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2617256"></a>5.1.4.2 ETHCM_ACK header</h4></div></div></div><div class="table"><a name="id2617262"></a><p class="title"><b>Table 5.7 ETHCM Ack header</b></p><div class="table-contents"><table summary="ETHCM Ack header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td align="center">R</td><td colspan="3" align="center">Res</td><td colspan="12" align="center">Ackno</td><td colspan="12" align="center">Seqno</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">R</span></dt><dd><p>ACK-request, peer shall respond with an ACK of its own as
+              soon as possible. (Used during connection supervision.)</p></dd><dt><span class="term">Res</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Ackno</span></dt><dd><p>Shall be set to the next expected or missing seqno from
+              peer.</p></dd><dt><span class="term">Seqno</span></dt><dd><p>Incremented for every sent packet. Note that seqnos are
+              set based on sent packets rather than sent bytes as in
+              TCP.</p></dd></dl></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2617781"></a>5.1.4.3 ETHCM_NACK header</h4></div></div></div><p>NACK is sent when a hole in the stream of received reliable
+        packets is detected. If a sequence of packets is missing all are
+        NACKed by the same NACK packet. A timer ensures that NACKs are sent as
+        long as there are out-of-order packets in the receive queue.</p><div class="table"><a name="id2617795"></a><p class="title"><b>Table 5.8 ETHCM Nack header</b></p><div class="table-contents"><table summary="ETHCM Nack header" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="4">Next</td><td colspan="4" align="center">Reserved</td><td colspan="8" align="center">Count</td><td colspan="4" align="center">Res</td><td colspan="12" align="center">Seqno</td></tr></tbody></table></div></div><br class="table-break"><div class="variablelist"><dl><dt><span class="term">Next</span></dt><dd><p>Next header, the protocol number of the following Enea
+              LINX header or 1111b if last header.</p></dd><dt><span class="term">Reserved</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Count</span></dt><dd><p>Number of NACKed seqnos.</p></dd><dt><span class="term">Res</span></dt><dd><p>Reserved for future use, must be 0.</p></dd><dt><span class="term">Seqno</span></dt><dd><p>First NACKed seqno, the rest are assumed to follow
+              consecutively seqno + 1, seqno + 2, ... , seqno + count -
+              1.</p></dd></dl></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2618313"></a>5.1.5 Enea LINX Connection Supervision Protocol</h3></div></div></div><p>The purpose of the<a class="indexterm" name="id2618322"></a> Connection Supervision function is to detect crashes on
+      the B-side. If B has been silent for some time A sends a few rapid pings
+      and, if B doesn't respond, A decides that B has crashed, notifies higher
+      layers, and initiates teardown of the connection. There is no separate
+      PDU for the Connection Supervision function, the ACKR header from the
+      reliability protocol doubles as ping PDU.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2618339"></a>5.1.5.1 Connection Supervision protocol description</h4></div></div></div><h6><a name="id2618345"></a>A-side</h6><p>When a connection has been established, the Ethernet Connection
+        Manager initializes the Connection Supervision function to state
+        PASSIVE and starts a timer which will fire at regular interval as long
+        as the link is up.</p><div class="procedure"><ol type="1"><li><p>When the timer fires, the Ethernet Connection Manager checks
+            if packets have been received from B since the last time the timer
+            was active.</p><div class="orderedlist"><ol type="a" compact><li><p>If yes, clear packets counter, set Connection
+                Supervision state to PASSIVE and go to step 2.</p></li><li><p>If no, check if connection supervision is already in
+                active state.</p><div class="orderedlist"><ol type="i" compact><li><p>If no, enter state Active and send an ACKR to
+                    B.</p></li><li><p>If yes, check if the ping limit has been
+                    reached.</p><div class="orderedlist"><ol type="A" compact><li><p>If yes, the connection is down, notify higher
+                        layers and go to state Disconnected.</p></li><li><p>If no, resend ACKR and increment the ping
+                        counter.</p></li></ol></div></li></ol></div></li></ol></div></li><li><p>Restart the timer.</p></li><li><p>If the connection is closed, stop the send timer.</p></li></ol></div><h5><a name="id2618478"></a>B-side</h5><div class="procedure"><ul><li><p>When an ACKR is received, reply to the sender with an empty
+            ACK [RN,SNmax-1].</p></li></ul></div><div class="figure"><a name="id2618495"></a><p class="title"><b>Figure 5.4 State diagram for Connection Supervision</b></p><div class="figure-contents"><div class="mediaobject"><img src="images/linxprotocols-connect-supervise.png" alt="State diagram for Connection Supervision"></div></div></div><br class="figure-break"><div class="figure"><a name="id2618532"></a><p class="title"><b>Figure 5.5 Connection supervision: the peer is down.</b></p><div class="figure-contents"><div class="mediaobject"><img src="images/linxprotocols-connect-supervise-peer-down.png" alt="Connection supervision: the peer is down."></div></div></div><br class="figure-break"></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="eth_cm_manager.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="eth_cm_manager.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="linxdisc-daemon.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><b>5. Enea LINX Ethernet Connection Manager</b> </td><td width="20%" align="center"><a accesskey="h" href="title.html">Home</a> | <a accesskey="i" href="ix01.html">Index</a></td><td width="40%" align="right" valign="top"> <b>5.2 LINX Discovery Daemon</b></td></tr><tr> </tr><tr><td colspan="3" align="center">© Enea Software AB 2011</td></tr></table></div></body></html>

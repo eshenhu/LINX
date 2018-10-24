@@ -1,0 +1,30 @@
+*** linx-2.4.2/net/linx/ecm/ecm_tx.c.orig	2010-08-30 10:43:14.000000000 +0200
+--- linx-2.4.2/net/linx/ecm/ecm_tx.c	2010-08-30 10:43:33.000000000 +0200
+***************
+*** 188,195 ****
+--- 188,212 ----
+  	return 0;
+  }
+  
++ #include <net/sock.h>
++ 
+  static inline void xmit_pkt(struct RlnhLinkObj *co, struct sk_buff *skb)
+  {
++ 	/* Fix for faulty drivers not allocating enough headroom */
++ 	struct net_device *dev = co->ecm_dev->dev;
++ 	unsigned int hlen = LL_RESERVED_SPACE(dev);
++ 	if (skb_headroom(skb) < hlen && dev->header_ops) {
++ 		struct sk_buff *skb_new;
++ 		skb_new = skb_realloc_headroom(skb, hlen);
++ 		if (skb_new == NULL) {
++ 			kfree(skb);
++ 			return;
++ 		}
++ 		if (skb->sk)
++ 			skb_set_owner_w(skb_new, skb->sk);
++ 		kfree_skb(skb);
++ 		skb = skb_new;
++ 	}
+  	skb->dev = co->ecm_dev->dev;
+  	fill_eth_hdr(co, skb);
+  	co->tx_packets++;

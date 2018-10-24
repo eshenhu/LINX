@@ -1,0 +1,110 @@
+.TH LINX_SIGATTR 3 "2008-04-23" 1.0 "LIBLINX"
+.SH NAME
+linx_sigattr() - Get an attribute of a LINX signal
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_sigattr(const LINX *" linx ", const union LINX_SIGNAL **" sig ", uint32_t " attr ", void **" value ");"
+
+.SH DESCRIPTION
+The 
+.BR linx_sigattr "(3)"
+API function is used to determine what attributes a received signal sig has, due
+to a 
+.BR linx_send_w_opt "(3)"
+LINX API call. The 
+.I value
+pointer will be set to an attribute specific value. The 
+.I linx
+parameter is the LINX handle used when receiving the signal. 
+
+.I linx
+is the handle to the LINX endpoint, which owns the
+.I sig
+signal buffer.
+.br
+
+.I attr
+is the attribute of the
+.I sig
+signal buffer.
+.br
+
+.I value
+is the returned value that corresponds to 
+.I attr
+which in turn is the name of the attribute set on the
+.I sig
+signal buffer.
+.I attr
+can have the following values.
+.TP
+.B LINX_SIG_ATTR_OOB
+A signal has the 
+.B LINX_SIG_OPT_OOB
+attribute with value set to 
+.I 1 
+if it was sent using the alternative 
+.BR linx_send_w_opt "(3)"
+with
+.BR LINX_SIG_OPT_OOB "."
+If the attribute is not set, the returned value is 
+.IR ~0 "."
+
+The OOB attribute has no affect on further communication using the signal, it is
+kept to make it possible for the receiving LINX endpoint to know if a signal is
+OOB or not. If the signal is sent to another LINX endpoint and the OOB attribute
+needs to be preserved, the 
+.BR linx_send_w_opt "(3)"
+call needs to be used for that signaling. If the received OOB signal is sent with 
+.BR linx_send "(3)"
+ or
+.BR linx_send_w_s "(3)"
+the OOB attribute is lost and the signal is transmitted as a in band signal.
+.SH "RETURN VALUE"
+Returns 0 if successful. On failure, -1 is returned and 
+.I errno
+ will be set.
+.SH ERRORS
+.BR EBADF ", " ENOTSOCK
+The LINX endpoint is associated with an invalid socket descriptor.
+.SH "BUGS/LIMITATIONS"
+None.
+.SH SEE ALSO
+.BR linx "(7), " linx_send_w_opt "(3)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2008, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

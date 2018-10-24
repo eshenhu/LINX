@@ -1,0 +1,107 @@
+.TH LINX_GET_STAT 3 "2006-07-30" 1.0 "LIBLINX"
+.SH NAME
+linx_get_stat() - Get the statistics of a LINX endpoint
+.br
+linx_free_stat() - Free the statistics struct returned by
+.BR linx_get_stat "(3)"
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx_ioctl.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "int linx_get_stat(LINX *" linx ", LINX_SPID " spid ", struct linx_info_stat **" stat ");"
+.br
+
+.BI "int linx_free_stat(LINX *" linx ", struct linx_info_stat **" stat ");"
+
+.SH DESCRIPTION
+Get the statistics of the LINX endpoint, associated with the local
+.I spid
+binary identifier if the LINX kernel module is compiled with SOCK_STAT=yes.
+
+.I linx 
+is the handle to the LINX endpoint, which is used to retrive the statistics.
+.br
+
+.I spid 
+is the identifier of the other LINX endpoint, for which the statistics is requested.
+.br
+
+.I stat
+will on return point to an struct
+.I linx_info_stat
+buffer contining the statistics. 
+Unless returned as NULL, the buffer must be freed by the user with
+.BR linx_free_stat "(3), "
+when no longer needed. For details on the
+.I linx_info_stat
+struct see
+.BR linx "(7)".
+.br
+
+.SH "RETURN VALUE"
+Returns 0 if successful, for
+.BR linx_get_stat "(3)"
+the 
+.I stat
+will contain a pointer to a buffer, allocated by LINX, containing the statistics. 
+The user is responsible for freeing the buffer with 
+.BR linx_free_stat "(3)."
+.br
+In case of failure, -1 will be returned and 
+.I errno 
+will be set. 
+.SH ERRORS
+.B ENOSYS
+if the LINX kernel module has not been compiled with SOCK_STAT=yes.
+.br
+
+.B ENOMEM
+Insufficient memory is available.
+.br
+
+.BR EBADF
+The
+.IR linx
+handle is associated with an invalid socket descriptor.
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH SEE ALSO
+.BR linx "(7), " linx_open "(3)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

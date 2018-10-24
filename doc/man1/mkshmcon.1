@@ -1,0 +1,103 @@
+.TH MKSHMCON 1 "2008-08-25" 1.0 "LINX"
+.SH NAME
+mkshmcon \- create LINX shared memory connections.
+.SH SYNOPSIS
+.B mkshmcon [OPTIONS] <connection>
+
+.SH DESCRIPTION
+Create a LINX shared memory connection to a remote node.
+
+.SH OPTIONS
+
+.IP "-h, --help"
+Display help and exit.
+
+.IP "-m, --mtu"
+The maximum transfer unit option defines the number of bytes
+that one slot in a mailbox can hold. This option is also used
+as maximum receive unit (i.e. symmetric Rx and Tx areas).
+
+.IP "-s, --silent"
+Silent mode, only error messages are printed to stdout.
+
+.IP "-t, --con_tmo"
+Connection time-out is used as a supervision time-out, i.e. every
+conn_tmo milliseconds, the shared memory CM checks if any packets
+from the peer has been received. After two consequtive conn_tmo:s
+without any packets from the peer, the connection is disconnected.
+
+.IP "-x, --side"
+Swap Tx and Rx area. One side's Tx area is the other side's Rx
+area and vice versa. When a connection is setup, the -x option
+must be set on one of the sides.
+
+.IP "-n, --slots"
+Number of slots per mailbox. This option must be the same on both
+sides of a connection.
+
+.IP "-b, --mbox"
+Mailbox identifier. Both sides of a connection must use the same
+identifier.
+
+.SH FILES
+None.
+
+.SH DIAGNOSTICS
+None.
+
+.SH KNOWN BUGS
+None.
+
+.SH EXAMPLES
+.nf
+Create a shared memory connection between CPU A and CPU B. Each
+mailbox consists of 16 slots and each slot can hold 120 bytes.
+The connection time-out is set to 1 sec, i.e. if no packets has
+been received from the peer for 2-3 sec, the connection is
+disconnected:
+
+On CPU A,
+mkshmcon -t 1000 -b 1 -n 16 -m 120 cpu_b
+
+On CPU B,
+mkshmcon -t 1000 -b 1 -n 16 -m 120 -x cpu_a
+.fi
+
+.SH "SEE ALSO"
+.BR linx "(7), "
+.BR linxcfg "(1), "
+.BR linxstat "(1), "
+.BR linxdisc "(8), "
+.BR mklink "(1), "
+.BR rmshmcon "(1)"
+
+.SH AUTHOR
+Enea LINX team
+
+.SH COPYRIGHT
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

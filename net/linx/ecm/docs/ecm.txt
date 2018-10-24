@@ -1,0 +1,526 @@
+ECM                                                                          ECM
+
+                 LINX Ethernet Connection Manager (ECM) 2.0
+
+Introduction
+============
+
+The ECM comprises 10 files, which are listed below together with a short
+description.
+
+* ecm_conn.c,     this file implements the connection management, i.e. create,
+                  connect, disconnect and destroy. It also contains the code
+                  that turns ECM into kernel module.
+
+* ecm_rx.c,       this file implements the ECM packet reception, from "the Rx
+                  interrupt" to the deliver up-call.
+
+* ecm_tx.c,       this file implements the ECM packet transmission, from
+                  the transmit down-call to the dev_queue_xmit call.
+
+* ecm.h,          this file contains types, macros and prototypes that are
+                  shared by ecm_conn.c, ecm_rx.c and ecm_tx.c,
+                  e.g. struct RlnhLinkObj, etc.
+
+* ecm_lock.h,     this file implements a mechanism that is used to synchronize
+                  Rx/Tx with connection management.
+
+* ecm_proto.h,    this file contains ECM protocol specific defines, types and
+                  functions.
+
+* ecm_kutils.c/h, these files contains macros, types and functions that are
+                  missing in older Linux kernels. Always include these files
+                  in the build (kernel version macros select what is
+                  needed).
+
+All the above mentioned files are compiled and linked into a Linux kernel
+module, linx_eth_cm.ko. No symbols are exported from this module. However, it
+depends on four functions that are exported from the LINX kernel module,
+db_add_template, db_del_template, db_proc_add and db_proc_del.
+
+The ECM implementation is split into three separate parts, i.e. packet
+reception, packet transmission and connection management. Each part is
+separately described below.
+
+                          ecm_dc_<x>()  connected(),
+                                   |    disconnected()
+   ecm_dc_transmit()               |      ^                          deliver()
+     |                             v      |                              ^
+     |                          +-----------+                            |
+     |  +- ecm_send_conn_pkt() -| Conn Mgmt |<- ecm_submit_conn_pkt() -+ |
+     |  |                       +-----------+                          | |
+     v  v                             ^                                | |
+   +------+                           |                              +------+
+   |  Tx  |                           |                              |  Rx  |
+   +------+                      net_event()                         +------+
+      |                               |                                 ^
+      |                               |                                 |
+   dev_queue_xmit()                   |                              ecm_rx()
+      |                               |                                 |
+      v                               |                                 |
++-----------------------------------------------------------------------------+
+|                                net device                                   |
++-----------------------------------------------------------------------------+
+
+                              Fig.1 ECM overview.
+
+
+Connection Management
+=====================
+
+The workqueue and ECM jobs:
+---------------------------
+
+The connection management implementation is based on a single threaded
+workqueue. The ecm_workq_func acts as the workqueue's entry point, dispatching
+the different jobs. These functions submit jobs to the workqueue.
+
+* ecm_create/destroy,    called by DB, LINX configuration management, to create
+                         or destroy a connection.
+
+* ecm_dc_<x>,            down-calls except transmit, see rlnh_link.h.
+
+* ecm_submit_conn_pkt,   called by Rx when a CONN packet has been received, see
+                         ecm_proto.h (or doc/linxprotocols/linxprotocols.html).
+
+* ecm_submit_disconnect, called by Rx/Tx code to request a disconnect.
+
+* conn_tmo_func,         called when the connection timer expires.
+
+* net_event,             called when a NETDEV event has been received.
+
+All jobs are of type struct ecm_work, which also has a job specific part. Jobs
+are normally allocated with alloc_ecm_work, which uses kmalloc.
+
+In non-atomic context, kmalloc with GFP_KERNEL is used for "normal" jobs and
+__GFP_REPEAT or __GFP_NOFAIL is added for more important jobs (to make the
+kernel try harder).
+
+In atomic context, kmalloc with GFP_ATOMIC is used for "normal" jobs and
+pre-allocated memory is used for important ones.
+
+ecm_create/destroy		 GFP_KERNEL
+ecm_dc_init/connect/finalize	 GFP_KERNEL with __GFP_REPEAT or __GFP_NOFAIL.
+ecm_dc_disconnect		 pre-allocated memory
+ecm_submit_conn_pkt		 GFP_ATOMIC (note 1)
+ecm_submit_disconnect		 pre-allocated memory
+conn_tmo_func			 GFP_ATOMIC (note 2)
+net_event			 GFP_KERNEL (note 3)
+
+Note 1: CONN packets are sent unreliable, so it is no big deal if kmalloc
+        fails.
+Note 2: If kmalloc fails, we miss a "tick", which will have little (or no)
+        impact on the connection behavior.
+Note 3: If a NETDEV_DOWN/_UP is lost, the connection timer will solve it. The
+        other two supported events, NETDEV_REGISTER/_UNREGISTER, should not be
+        dropped, but it is highly unlikely that it happens. Ignore it!
+
+Some of these functions require that the work has been carried out by the work
+queue, before they can return, e.g. ecm_create. This is accomplished with
+a waitqueue, illustrated with the following code snippet:
+
+static int func(void)
+{
+        ...
+        w->status = 0;
+        queue_work(ecm_workq, &w->work);
+
+        wait_event(ecm_waitq, &w->status != 0); /* Wait here! */
+        ...
+}
+
+static void ecm_workq_func(struct work_struct *p)
+{
+        w = container_of(p, struct ecm_work, work);
+        ...
+        w->status = 1;            /* Done! Set wake-up condition. */
+        wake_up_sync(&ecm_waitq); /* Wake-up! */
+        ...
+}
+
+
+How to synchronize Rx/Tx with the workqueue:
+--------------------------------------------
+
+Sometimes Rx/Tx code must be synchronized with the workqueue, e.g. during
+a disconnect. Rx/Tx code (or parts of it) runs "in atomic" context and is
+frequently called. For that reason, the lock should be fast to acquire and
+release. However, a workqueue may sleep, so that side of the lock doesn't need
+to be light weighted. The struct ecm_lock is a synchronization mechanism based
+on an atomic variable and a waitqueue. It works like this:
+
+static void rx(void)
+{
+        ...
+        if (ecm_trylock(&p->rx_lock) == 0)
+                return; /* Didn't get the lock! */
+
+        /* Critical region */
+
+        ecm_unlock(&p->rx_lock);
+}
+
+static void ecm_workq_func(struct work_struct *p)
+{
+        ...
+        synchronize_ecm_lock(&p->rx_lock);
+
+        /*
+         * When synchronize_ecm_lock returns, two things are guaranteed:
+         *
+         * 1. No one can acquire rx_lock, i.e. no one can enter the critical
+         *    region.
+         * 2. No one is left inside the critical region.
+         *
+         * Note: synchronize_ecm_lock may sleep!
+         */
+        ...
+}
+
+Let us have a closer look at how this works. First we have the ecm_lock data
+type,
+
+struct ecm_lock {
+        atomic_t count;
+        wait_queue_head_t waitq;
+};
+
+and then three functions. Note that count must be initialized to 1 to allow
+anyone to get the lock!
+
+static inline int ecm_trylock(struct ecm_lock *lock)
+{
+        return atomic_positive_inc(&lock->count);
+}
+
+If count is greater than 0, ecm_trylock will increment count and return
+success, i.e. got the lock. Note that count-1 is the number of users currently
+holding the lock (since count is initialized to 1).
+
+static inline void ecm_unlock(struct ecm_lock *lock)
+{
+        if (atomic_add_negative(-1, &lock->count))
+                wake_up_sync(&lock->waitq);
+}
+
+As long as count is greater than 1, ecm_unlock just decrements count. However
+if count is less than or equal to 0, then wake_up_sync is also called (for
+every ecm_unlock).
+
+static inline void synchronize_ecm_lock(struct ecm_lock *lock)
+{
+        int k = atomic_xchg(&lock->count, 0) - 1;
+        if (k <= 0)
+                return;
+        wait_event(lock->waitq, atomic_read(&lock->count) == -k);
+}
+
+First, count is replaced with 0 and k is assigned the number of users currently
+holding the lock. Since count now is less than or equal to 0, ecm_trylock will
+fail. If k is 0, no one is holding the lock and it is safe to return. But if k
+is greater than 0, then we have to wait until all lock holders have called
+ecm_unlock, before we can return. That is why we use a waitqueue and sleeps
+until count is -k (ecm_unlock adds -1 to count).
+
+For example, let us say that count is 3, i.e. there are 2 lock holders. Now
+synchronize_ecm_lock is called and when we reach wait_event, count is 0 and
+k is 2, i.e. we sleep until count is -2. When the lock holders are done and
+call ecm_unlock, count is first -1 and then -2, since count is negative
+wake_up_sync is called.
+
+Each ECM connection uses 3 ecm-locks namely,
+
+* tx_lock, this lock is used to control packet transmission, i.e. it is
+          (re-)set to 1 on connect downcall and synchronize_ecm_lock is called
+           prior to a disconnected upcall.
+
+* rx_lock, this lock is used to stop deliver upcalls after a disconnected
+           upcall, i.e. synchronize_ecm_lock is called prior to a disconnected
+           upcall.
+
+* conn_rx_lock, this lock is used to stop CONN packets from being submitted to
+                the workqueue, i.e. do not call ecm_submit_conn_pkt any more.
+
+ECM makes use of reference counting for the connection objects. The use count
+is initialized to 1 and the object is freed when the use count is 0. There are
+get/put functions, however they are not "generic" (no need for it).
+Instead the following rules apply:
+
+* Transmit functions, e.g. ecm_dc_transmit, ecm_send_conn_pkt, etc., always
+  receive the connection object as a parameter, so it is up to "the caller"
+  to guarantee that the connection object is not released.
+
+* The receive entry point must use get_ecm_connection to look-up the correct
+  connection object and call put_ecm_connection once it no longer needs
+  the object.
+
+* The workqueue can access the connection object unrestricted. When a
+  connection should be removed, the workqueue must do put_ecm_connection.
+  Before it can call put_ecm_connection, it must make sure that no more jobs
+  are in, or submitted to the workqueue.
+
+
+"The connection object" data structure:
+---------------------------------------
+
+Since receive code must be able to look-up a connection, based on information
+in a packet, the following data structure is used.
+
+ecm_device_list ---> struct ecm_dev ---> struct ecm_dev ---> ...
+                          ^  |  |
+                          |  |  +---> struct net_device
+                          |  |
+                          |  +---> struct RlnhLinkObj ---> ...
+                          |               |  ^
+                          +---------------+  |
+                                             |
+                                             |
+ecm_connection_array[0] (reserved)           |
+                    [1] ---------------------+
+                    [2]
+                    ...
+                    [255]
+
+             Fig.2 The ECM's connection object data structure.
+
+First, the struct RlnhLinkObj is the connection object, which holds all per
+connection data. The struct ecm_dev is a container for the kernel's struct
+net_device (see network device section for more information).
+
+ECM keeps network devices (or interfaces), e.g. eth0, eth1, in a list,
+ecm_device_list. Each list entry is associated with one struct net_device.
+Also, all connections assigned to this interface (see mkethcon man-page) is
+linked to this entry. ECM also have an array of connection object pointers,
+indexed with a so-called connection ID (see ECM protocol for details), to
+provide fast connection look-up.
+
+All in all, this data structure makes it possible to look-up a connection
+object from a connection ID, MAC address or struct net_device/struct ecm_dev
+pointer.
+
+As mentioned above, this data structure is accessed from both receive and
+workqueue context and must be protected. A spinlock, ecm_lock, is used since
+receive code can not sleep (atomic context). There is one function to add
+a connection object, add_ecm_connection, and one function, del_ecm_connection,
+to remove it. Note that the del_ecm_function does not free the connection
+object, it merely unlinks it from the data structure, i.e. get_ecm_connection
+will not find it. A connection object is only freed when the last user calls
+put_ecm_connection.
+
+
+The connection state machine:
+-----------------------------
+
+The bulk of the connection management is done in do_the_gory_stuff and its
+subroutines (most workqueue jobs calls this functions). It has one task, to
+make sure that the RLNH/CM API (see rlnh_link.h) is fulfilled. A simple state
+machine is used, a short state description follows.
+
+* STATE_DISCONNECTED, disconnected upcall has been called. It is also
+                      a connection's initial state.
+
+* STATE_CONNECTING_0, got a connect downcall, start connecting to peer.
+
+* STATE_CONNECTING_1, sent a CONN_CONNECT to peer.
+
+* STATE_CONNECTING_2, sent a CONN_CONNECT_ACK to peer (reply to CONN_CONNECT).
+
+* STATE_CONNECTED,    connected upcall has been called.
+
+A CONN_RESET or a ECM protocol violation in "CONNECTING" state sets the state
+back to STATE_CONNECTING_0. If a CONN_RESET is received or a protocol violation
+occurs in STATE_CONNECTED, the state is set back STATE_DISCONNECTED.
+
+In "CONNECTING" state, a timer is used to drive the state machine (if the peer
+does not respond). Each time-out, a CONN_TMO is fed into the state machine.
+Once in STATE_CONNECTED, the same timer is used to supervise the connection.
+This timer is started when the connection is created and stopped when
+the connection is removed.
+
+                                  +-----> STATE_CONNECTING_1 -----+
+                                  |                               |
+                                  v                               v
+   STATE_DISCONNECTED <--> STATE_CONNECTING_0 <----------- STATE_CONNECTED
+            ^                     ^                               ^   |
+            |                     |                               |   |
+            |                     +-----> STATE_CONNECTING_2 -----+   |
+            |                                                         |
+            +---------------------------------------------------------+
+
+                       Fig.3 The ECM state machine.
+
+One thing worth mentioning, an "ECM internal" disconnect is done by feeding
+a CONN_RESET into the state machine.
+
+
+"The connection ID problem":
+----------------------------
+
+The connection id (or cid) is used for fast connection object look-up. During
+connection setup, the cid is sent to the peer (field in the connection header).
+Bear in mind that cid in the main header is always 0 for CONN packets,
+i.e. connection objects are looked-up via MAC address. Once the connection is
+up, packets from the peer contains this cid.
+
+Imagine the following scenario:
+
+A has a connection to B, B includes cid=5 in every packet to A. Now A decides
+to the destroy the connection to B. When A is done, the cid=5 is released. If
+a new connection is created, say to C, it is highly likely that the cid=5 is
+re-used for this connection. So now A has a connection to C, which uses cid=5.
+So far so good, but there is no synchronization between A and B with respect to
+disconnect. B might still have its connection to A (due to CONN_RESET from
+A has been dropped etc.). So B keeps sending packets with cid=5 to A, until
+the connection is disconnected. Now A gets packets from both B and C with
+cid=5. This is not acceptable!
+
+One solution to this problem is to use a combination of cid and source MAC
+address. However, the <cid, MAC> pair look-up would add extra logic to every
+look-up (every received packet). Instead a simple garbage collect is
+implemented. A cid can not be re-used for a certain period of time. This period
+must be significantly longer than the max time it would take to detect a "dead
+peer" on any connection in the system.
+
+A kernel timer, ecm_release_cid_timer, is used. To make sure that the cid is
+locked for at least one whole period, two "ticks" must pass before the entry
+in ecm_connection_array is set to NULL (i.e. free).
+
+
+Network device client:
+----------------------
+
+The ECM acts as a network device client, it supports a couple of network
+events.
+
+* NETDEV_REGISTER,   a network device is available, see handle_netdev_register.
+* NETDEV_DOWN,       a network device is shut-down, see handle_netdev_down.
+* NETDEV_UP,         a network device is up, no code is needed to handle this
+                     event, the connection timer takes care of it.
+* NETDEV_UNREGISTER, a network device is unavailable, e.g. when the driver is
+                     unloaded, see handle_netdev_register.
+
+Other events are either ignored (no impact on ECM) or unsupported (have
+impact on ECM). Ignored events are silently dropped, while unsupported events
+always prints an error message.
+
+Connections are created/destroyed with commands, there is no way to internally
+destroy a connection. So when a NETDEV_UNREGISTER event is received for
+an interface, any connections using that interface are moved to a separate
+list, ecm_orphan_list. A connection stays in the "orphan" list until a matching
+interface is registered (i.e. NETDEV_REGISTER is received), then it is moved
+to that interface's connection list. Note that matching is done solely on the
+interface name. Beware!!!
+
+
+RX and TX
+=========
+
+Sliding Window Queue Implementation:
+------------------------------------
+
+Ethernet is an unreliable medium and any reliability layer must be implemented
+on top of Ethernet. For the ECM a sliding window queue is implemented, this is
+a technique used in for instance in TCP. With the sliding window queue the
+sender is allowed to send a certain number of packets without having to wait
+for each packet to be acknowledged by the receiver, i.e. the sender has a
+"window" that can be filled with sent packets. All packets sent are saved until
+they have been acknowledged.
+
+The receiving side constantly acknowledges received in-order packets either by
+piggy-backing the acknowledgement on user-data sent in the opposite direction
+or by sending an empty acknowledgement packet. When the sender receives an
+acknowledgement all packets that are acknowledged in the sliding window queue
+are removed thus freeing up the sender's "window" and more packets can be sent.
+
+Packet-loss is detected by the receiver that sends a nack message, the sending
+side re-sends the missing packet(s) upon receiving the nack. Out-of-order
+packets are not thrown away at the receiver but stored until all missing
+packets are received, delivery to the next layer is guaranteed to be in-order.
+Resend timers are also needed, for instance if the last packet of a burst is
+lost the receiver has no way of detecting the packet-loss, in this case the
+sender will resend the first non-acknowledged packet if it has not received an
+ack in a certain amount of time. There is also a timer on the receiving side
+that resends nack messages if the missing packet(s) has not been received. The
+sliding window queue also adds simple flow-control where the sender is unable
+to flood the receiver but only per connection, the node can still be flooded if
+it has many connections.
+
+
+Tasklets in RX and TX:
+----------------------
+
+Depending on the Linux kernel interrupts are handled differently, when running
+ECM on a SMP environment we must assume that rx interrupts can be handled in
+parallel on any core resulting in the ECM being called on different cores
+simultaneously. Without some form of synchronization, packets could be
+delivered to higher layers in the wrong order even if they have been received
+in the correct order by the ECM.
+
+In the ECM the strategy was to do as much processing in the RX interrupt itself
+increasing parallelism and use tasklets to synchronize delivery of signals to
+higher layers.  The RX tasklet handles the updating of sliding window queue for
+that connection before delivering the signal plus any previously queued signals
+that can be delivered now or queuing it if it is out-of-order.
+
+On the TX side a transmit downcall can be called at any time (if the connection
+is connected) and from any context. The critical part on the sending side is
+the allocation of sequence numbers that all reliable packets must have. To
+avoid using spinlocks tasklets are used to synchronize all handling of the
+sliding window queue.
+
+There is one tasklet for RX and one for TX per connection.
+
+To synchronize with connect/disconnect there cannot be anyone running in either
+RX or TX which means in the RX case that from that the RX interrupt occurs
+until the the time the tasklet has run and taken care of that packet the ECM is
+considered to be "in RX". The same on the TX side, after calling the transmit
+downcall until the TX tasklet has been run and the packet taken care of we are
+"in TX".
+
+When a disconnect is called the ECM must wait until no one is left in RX or TX.
+Atomic counters are used to keep track of number of how many are in RX and TX.
+But it is not just as easy as counting the number of times a tasklet is
+scheduled. A tasklet runs in a soft interrupt and can only run on one core at a
+given time, the same tasklet cannot run on several cores at once. A tasklet can
+be re-scheduled if it is already running but it cannot be scheduled several
+times, i.e. if the tasklet is running and during that schedule_tasklet is
+called twice for that tasklet it will only be scheduled once. Still, the ECM
+must keep track of how many times the tasklet actually is scheduled and if it
+is scheduled then and only then increase the usage counter, this little bit of
+code takes care of that:
+
+static inline void schedule_rx_tasklet(struct RlnhLinkObj *co)
+{
+        if (likely(0 == test_and_set_bit(TASKLET_STATE_SCHED, &co->rx.state))){
+                if (unlikely(0 == ecm_trylock(&co->rx_lock)))
+                        clear_bit(TASKLET_STATE_SCHED, &co->rx.state);
+                else
+                        __tasklet_schedule(&co->rx);
+        }
+}
+
+This function checks the state of the tasklet to find out if it is already
+scheduled by checking the TASKLET_STATE_SCHED bit in co->state. If the tasklet
+is scheduled it will do nothing, if not then the TASKLET_STATE_SCHED bit is set
+and the counter is increased by calling ecm_trylock before the tasklet is
+actually sent to the scheduler with __tasklet_schedule. Should there be a
+disconnect in progress the ecm_trylock will fail and the tasklet will not be
+scheduled and the state will be cleared.
+
+
+Fragmentation implementation:
+-----------------------------
+
+The ECM is limited by the MTU in how much user-data it can send in each
+Ethernet packet, signals larger than the MTU must be split into fragments and
+each fragment sent in separate packets. A fragmentation id is allocated for
+each signal to be fragmented. All fragments of the same signal will have the
+same fragmentation id, this to let the receiving side know which fragments are
+part of which signal.
+
+To optimize reassembly of the fragments on the receiving side an array is used
+for faster lookup. A fragmentation id can only map to one entry in the array
+and when receiving a fragment first the array is checked if the reassembly
+queue for that id is stored in the array, and if not a linked list is traversed
+until the correct reassembly queue is found. When the last fragment is received
+the whole signal is delivered to the next layer.

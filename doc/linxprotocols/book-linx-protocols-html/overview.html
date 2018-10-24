@@ -1,0 +1,45 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>2. Overview of the LINX Protocol</title><link rel="stylesheet" href="html.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"><meta name="keywords" content=""><link rel="start" href="title.html" title="LINX Protocols"><link rel="up" href="title.html" title="LINX Protocols"><link rel="prev" href="defines_acronyms.html" title="1.3 Definitions and Acronyms"><link rel="next" href="linx-protocols.html" title="3. LINX Protocols"><base target="body"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><td colspan="2" align="left"><span class="headerbaseline">Document Version 21</span></td><td align="right"><IMG src="images/enea_logo.png"></td></tr><tr><td colspan="3" align="center" valign="bottom"><h2 class="title"><a name="book_linx_proto"></a>LINX Protocols</h2></td></tr><tr><td width="20%" align="left"><a accesskey="p" href="defines_acronyms.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="linx-protocols.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="overview"></a>2. Overview of the LINX Protocol</h2></div></div></div><p>Enea LINX is an open technology for distributed system IPC which is
+  platform and interconnect independent, scales well to large systems with any
+  topology, but that still has the performance needed for high traffic bearing
+  components of the system. It is based on a transparent message passing
+  method.</p><div class="figure"><a name="id2562082"></a><p class="title"><b>Figure 2.1 LINX Architecture</b></p><div class="figure-contents"><div class="mediaobject" align="center"><img src="images/linx-presentation.png" align="middle" alt="LINX Architecture"></div></div></div><p><br class="figure-break"></p><p>Enea LINX provides a solution for inter process communication for the
+  growing class of heterogeneous systems <a class="indexterm" name="id2562110"></a>using a mixture of operating systems, CPUs, microcontrollers
+  DSPs and media interconnects such as shared memory, RapidIO, Gigabit
+  Ethernet or network stacks. Architectures like this poses obvious problems,
+  endpoints on one CPU typically uses the IPC mechanism native to that
+  particular platform and they are seldom usable on platform running other
+  OSes. For distributed IPC other methods, such as TCP/IP, must be used but
+  that comes with rather high overhead and TCP/IP stacks may not be available
+  on small systems like DSPs. Enea LINX solves the problem since it can be
+  used as the sole IPC <a class="indexterm" name="id2562130"></a>mechanism for local and remote communication in the entire
+  heterogeneous distributed system.</p><p>The Enea LINX protocol stack has two layers - the RLNH <a class="indexterm" name="id2562144"></a>and the Connection Manager,<a class="indexterm" name="id2562154"></a> or CM, layers. RLNH corresponds to the session layer in the
+  OSI model and implements IPC functions including methods to look up
+  endpoints by name and to supervise to get asynchronous notifications if they
+  die. The Connection Manager layer corresponds to the transport layer in the
+  OSI model and implements reliable in order transmission of arbitrarily sized
+  messages over any media.</p><p>RLNH is responsible for resolving remote endpoint names, and for
+  setting up and removing local representations of remote endpoints. The RLNH
+  layer provides translation of endpoint OS IDs from the source to the
+  destination system. It also handles the interaction with the local OS and
+  applications that use the Enea LINX messaging services. RLNH consists of a
+  common, OS independent protocol module and an OS adaptation layer that
+  handles OS specific interactions.</p><p>The Connection Manager provides a reliable transport mechanism for
+  RLNH. When the media is unreliable, such as Ethernet, or have other quirks
+  the Connection Manager must implement means like flow control,
+  retransmission of dropped packets, peer supervision, and becomes much more
+  complex. On reliable media, such as shared memory or RapidIO, Connection
+  Managers can be quite simple.</p><p>The rest of this document contains a detailed description of the
+  protocols used by the RLNH and the CM layers of Enea LINX. Chapter 3
+  describes the RLNH protocol. Chapter 4 describes features shared by all
+  Connection Managers, i.e. what RLNH requires from a Connection Manager. The
+  description is intentionally kept on a high level since the functionality
+  actually implemented in any instance of a CM depends very much on the
+  properties of the underlying media. It is the intention that when Connection
+  Managers for new media are implemented the protocols will be described in
+  the following chapters. Finally Chapter 5 describes version two of the
+  Ethernet Connection Manager protocol.</p><p>The table below shows how protocol headers are described. PDUs are
+  sent in network byte order (e.g. big endian). Bits and bytes are numbered in
+  the order they are transmitted on the media. For example:</p><div class="table"><a name="id2562213"></a><p class="title"><b>Table 2.1 Protocol Message Legend</b></p><div class="table-contents"><table summary="Protocol Message Legend" cellpadding="5" border="1"><colgroup><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><tbody><tr><td><sup>0</sup></td><td><sup>1</sup></td><td><sup>2</sup></td><td><sup>3</sup></td><td><sup>4</sup></td><td><sup>5</sup></td><td><sup>6</sup></td><td><sup>7</sup></td><td><sup>8</sup></td><td><sup>9</sup></td><td><sup>10</sup></td><td><sup>11</sup></td><td><sup>12</sup></td><td><sup>13</sup></td><td><sup>14</sup></td><td><sup>15</sup></td><td><sup>16</sup></td><td><sup>17</sup></td><td><sup>18</sup></td><td><sup>19</sup></td><td><sup>20</sup></td><td><sup>21</sup></td><td><sup>22</sup></td><td><sup>23</sup></td><td><sup>24</sup></td><td><sup>25</sup></td><td><sup>26</sup></td><td><sup>27</sup></td><td><sup>28</sup></td><td><sup>29</sup></td><td><sup>30</sup></td><td><sup>31</sup></td></tr><tr><td colspan="8" align="center">0</td><td colspan="8" align="center">1</td><td colspan="8" align="center">2</td><td colspan="8" align="center">3</td></tr><tr><td colspan="8" align="center">One</td><td colspan="4" align="center">Two</td><td colspan="4" align="center">Three</td><td colspan="16" align="center">Reserved</td></tr><tr><td colspan="32" align="center">Four</td></tr></tbody></table></div></div><br class="table-break"><p>The first row shows bit numbers, the second row byte numbers for those
+  more comfortable with that view, and the last row example protocol fields.
+  In the header above, the fields in the header are sent in order: one, two,
+  three, reserved, four.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="defines_acronyms.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="title.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="linx-protocols.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top"><b>1.3 Definitions and Acronyms</b> </td><td width="20%" align="center"><a accesskey="h" href="title.html">Home</a> | <a accesskey="i" href="ix01.html">Index</a></td><td width="40%" align="right" valign="top"> <b>3. LINX Protocols</b></td></tr><tr> </tr><tr><td colspan="3" align="center">© Enea Software AB 2011</td></tr></table></div></body></html>

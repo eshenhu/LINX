@@ -1,0 +1,62 @@
+# Configuration example for the linxdisc daemon. If no variable is set,
+# default values are used.
+
+# Variables are set using the semantics NAME="value1 value2 ..."
+
+# The linxdisc.conf must be located in the /etc directory,
+# unless specified when linxdisc is started.
+
+# When the daemon catches a SIGHUP, the configuration will be reread.
+# IFACE, LINX_NETWORK_NAME and NODE_NAME will not be changed during
+# runtime while ALLOW and DENY will be applied immediately.
+# -----------------------------------------------------------------
+
+# IFACE specifies what network interface(s) to use. No support for alias
+# interfaces. Vlan insterfaces are supported. Several interfaces can be 
+# specified. e.g. IFACE="eth0 eth1". Default is to use all available 
+# interfaces.
+# IFACE="eth0 eth1"
+
+IFACE=""
+
+# LINX_NETWORK_NAME specifies the name of a LINX cluster. linxdisc only
+# creates LINX communication links with nodes advertising the same
+# cluster name. Default is the cluster name "undefined".
+# LINX_NETWORK_NAME="privatecluster"
+
+LINX_NETWORK_NAME=""
+
+# NODE_NAME specifies a node name to advertise. It is used by other nodes
+# to filter against the allow/deny filter chains. It is also used as the
+# recommended local link name, when linxdisc in a remote node creates LINX
+# communication links to this node, as a response to the advertisement.
+# Default node name is the hostname.
+# NODE_NAME="server1".
+
+NODE_NAME=""
+
+# ALLOW chain. If specified, linxdisc will only accept connections
+# to nodes with the specified advertised node names.
+# This variable can be set several times in this file and the node names
+# are concatenated to one ALLOW chain.
+# ALLOW="node1 node2"
+
+ALLOW=""
+
+# DENY chain. If DENY is specified instead of ALLOW, linxdisc will allow
+# LINX connections to any node, except those with advertised node names
+# listed here.
+# This variable can be set several times in this file and the node names
+# are concatenated to one DENY chain.
+# NOTE: This setting will have no effect if ALLOW is set.
+# DENY="node3 node4"
+
+DENY=""
+
+# Link parameter list. List of parameters to apply to all links created by
+# linxdisc.
+# For a description of parameters and allowed values, see linxcfg(1).
+# This variable can be set several times in this file and the specified
+# parameters are concatenated to one PARAM chain.
+
+PARAM=""

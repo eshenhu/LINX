@@ -1,0 +1,142 @@
+.TH LINX_OPEN 3 "2006-07-30" 1.0 "LIBLINX"
+.SH NAME
+linx_open - Create a LINX endpoint and give it a huntname.
+.SH SYNOPSIS
+.B #include <linx_types.h>
+.br
+.B #include <linx.h>
+.br
+
+.BI "LINX *linx_open(const char *" name ", uint32_t " options ", void *" arg ");"
+.SH DESCRIPTION
+A process uses 
+.BR linx_open "()"
+to create a LINX endpoint and give it a huntname. The call returns a handle to 
+the LINX endpoint to be used in subsequent LINX API calls. 
+As part of the
+.BR linx_open "(3)" 
+call, any pending hunts for the
+.I name
+are resolved, whether it is a local hunt or a hunt from a remote node connected
+via LINX.
+.br
+
+.I name 
+is the local part of the huntname to find this LINX endpoint. 
+It is a null-terminated string, which in Linux may be of any length, 
+but there may be restrictions due to other implementations,
+when communicating with other systems.
+.I name 
+does not need to be unique in the system, but if multiple LINX endpoints have the same
+name it is unspecified which one is used when a 
+.BR linx_hunt "(3)"
+call for the name is resolved.
+From another LINX endpoint, use 
+.BR linx_hunt "(3)"
+with the huntname, followed by
+.BR linx_receive "(3)"
+and
+.BR linx_sender "(3), "
+to get the binary identifier (spid) to be used to communicate with this LINX endpoint.
+The local LINX binary identifier (spid) for this endpoint can be fetched with 
+.BR linx_get_spid "(3)"
+but is usually not needed by the owner process. 
+.br
+
+The
+.IR options
+and
+.IR arg
+parameters are reserved for future extensions and shall be set to 0 and NULL respectively.
+.br
+
+A LINX endpoint is closed by calling
+.BR linx_close (3)
+or when the calling process exits.
+.br
+If the process owning the LINX endpoint calls
+.BR fork (2), 
+either the parent or the child must close the LINX handle with
+.BR linx_close (3).
+This is because only one process may use a LINX endpoint and
+after a fork both instances will have copies of the LINX handle.
+In any case, the LINX endpoint will not be terminated unless closed by both parent
+and child.
+.br
+
+It is possible to retrieve the LINX socket descriptor associated with a LINX endpoint
+using
+.BR linx_get_descriptor "(3)"
+if needed.
+
+
+.SH "RETURN VALUE"
+On success, a LINX handle is returned. On error, NULL is returned and
+.I errno 
+is set. 
+.SH ERRORS
+.B EINVAL
+Invalid argument passed.
+.br
+
+.BR ENOBUFS " or " ENOMEM
+Insufficient memory is available.
+
+.BR EPROTONOSUPPORT " or " EAFNOSUPPORT
+if
+.IR linx(7)
+is not supported by the system.
+
+.BR ENFILE
+Not enough kernel memory to allocate a new LINX endpoint structure.
+
+.BR EMFILE
+Process file table overflow.
+
+.BR EACCES
+Permission to create a LINX endpoint is denied.
+
+.SH "BUGS/LIMITATIONS"
+None.
+.SH SEE ALSO
+.BR linx "(7), " 
+.BR linx_close "(3), " 
+.BR linx_hunt "(3), "
+.BR linx_get_descriptor "(3), "
+.BR linx_receive "(3), "
+.BR linx_send "(3), "
+.BR linx_sender "(3), "
+.BR fork "(2)"
+.SH AUTHOR
+Enea LINX team
+.SH COPYRIGHT
+
+Copyright (c) 2006-2007, Enea Software AB
+All rights reserved.
+.br
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+.br
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+Neither the name of Enea Software AB nor the names of its
+contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
+.br
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

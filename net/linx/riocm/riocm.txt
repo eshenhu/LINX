@@ -1,0 +1,534 @@
+RIOCM                                                                     RIOCM
+
+                 LINX Serial Rapid IO Connection Manager (RIOCM)
+
+Introduction
+============
+
+The RIOCM comprises 10 files, which are listed below together with a short
+description.
+
+* rio_conn.c,     this file implements the connection management, i.e. create,
+                  connect, disconnect and destroy. It also contains the code
+                  that turns RIOCM into a kernel module.
+
+* rio_rx.c,       this file implements the RIOCM packet reception, from "the Rx
+                  interrupt" to the deliver up-call.
+
+* rio_tx.c,       this file implements the RIOCM packet transmission, from
+                  the transmit down-call to the dev_queue_xmit call.
+
+* rio.h,          this file contains types, macros and prototypes that are
+                  shared by rio_conn.c, rio_rx.c and rio_tx.c,
+                  e.g. struct RlnhLinkObj, etc.
+
+* rio_lock.h,     this file implements a mechanism that is used to synchronize
+                  Rx/Tx with connection management.
+
+* rio_proto.h,    this file contains RIOCM protocol specific defines, types and
+                  functions.
+
+* rio_kutils.c/h, these files contains macros, types and functions that are
+                  missing in older Linux kernels. Always include these files
+                  in the build (kernel version macros select what is
+                  needed).
+
+All the above mentioned files are compiled and linked into a Linux kernel
+module, linx_rio_cm.ko. No symbols are exported from this module. However, it
+depends on four functions that are exported from the LINX kernel module,
+db_add_template, db_del_template, db_proc_add and db_proc_del.
+
+The RIO CM implementation is split into three separate parts, i.e. packet
+reception, packet transmission and connection management. Each part is
+separately described below.
+
+                          rio_dc_<x>()  connected(),
+                                   |    disconnected()
+   rio_dc_transmit()               |      ^                          deliver()
+     |                             v      |                              ^
+     |                          +-----------+                            |
+     |  +- rio_send_conn_pkt() -| Conn Mgmt |<- rio_submit_conn_pkt() -+ |
+     |  |                       +-----------+                          | |
+     v  v                             ^                                | |
+   +------+                           |                              +------+
+   |  Tx  |                           |                              |  Rx  |
+   +------+                      net_event()                         +------+
+      |                               |                                 ^
+      |                               |                                 |
+   dev_queue_xmit()                   |                              rio_rx()
+      |                               |                                 |
+      v                               |                                 |
++-----------------------------------------------------------------------------+
+|                                net device                                   |
++-----------------------------------------------------------------------------+
+
+			    Fig.1 RIO CM overview.
+
+
+Connection Management
+=====================
+
+The workqueue and RIOCM jobs:
+-----------------------------
+
+The connection management implementation is based on a single threaded
+workqueue. The rio_workq_func acts as the workqueue's entry point, dispatching
+the different jobs. These functions submit jobs to the workqueue.
+
+* rio_create/destroy,    called by DB, LINX configuration management, to create
+                         or destroy a connection.
+
+* rio_dc_<x>,            down-calls except transmit, see rlnh_link.h.
+
+* rio_submit_conn_pkt,   called by Rx when a CONN packet has been received, see
+                         rio_proto.h (or doc/linxprotocols/linxprotocols.html).
+
+* rio_submit_disconnect, called by Rx/Tx code to request a disconnect.
+
+* conn_tmo_func,         called when the connection timer expires.
+
+* net_event,             called when a NETDEV event has been received.
+
+All jobs are of type struct rio_work, which also has a job specific part. Jobs
+are normally allocated with alloc_rio_work, which uses kmalloc.
+
+In non-atomic context, kmalloc with GFP_KERNEL is used for "normal" jobs and
+__GFP_REPEAT or __GFP_NOFAIL is added for more important jobs (to make the
+kernel try harder).
+
+In atomic context, kmalloc with GFP_ATOMIC is used for "normal" jobs and
+pre-allocated memory is used for important ones.
+
+rio_create/destroy		 GFP_KERNEL
+rio_dc_init/connect/finalize	 GFP_KERNEL with __GFP_REPEAT or __GFP_NOFAIL.
+rio_dc_disconnect		 pre-allocated memory
+rio_submit_conn_pkt		 GFP_ATOMIC (note 1)
+rio_submit_disconnect		 pre-allocated memory
+conn_tmo_func			 GFP_ATOMIC (note 2)
+net_event			 GFP_KERNEL (note 3)
+
+Note 1: CONN packets are sent unreliable, so it is no big deal if kmalloc
+        fails.
+Note 2: If kmalloc fails, we miss a "tick", which will have little (or no)
+        impact on the connection behavior.
+Note 3: If a NETDEV_DOWN/_UP is lost, the connection timer will solve it. The
+        other two supported events, NETDEV_REGISTER/_UNREGISTER, should not be
+        dropped, but it is highly unlikely that it happens. Ignore it!
+
+Some of these functions require that the work has been carried out by the work
+queue, before they can return, e.g. rio_create. This is accomplished with
+a waitqueue, illustrated with the following code snippet:
+
+static int func(void)
+{
+        ...
+        w->status = 0;
+        queue_work(rio_workq, &w->work);
+
+        wait_event(rio_waitq, &w->status != 0); /* Wait here! */
+        ...
+}
+
+static void rio_workq_func(struct work_struct *p)
+{
+        w = container_of(p, struct rio_work, work);
+        ...
+        w->status = 1;            /* Done! Set wake-up condition. */
+        wake_up_sync(&rio_waitq); /* Wake-up! */
+        ...
+}
+
+
+How to synchronize Rx/Tx with the workqueue:
+--------------------------------------------
+
+Sometimes Rx/Tx code must be synchronized with the workqueue, e.g. during
+a disconnect. Rx/Tx code (or parts of it) runs "in atomic" context and is
+frequently called. For that reason, the lock should be fast to acquire and
+release. However, a workqueue may sleep, so that side of the lock doesn't need
+to be light weighted. The struct rio_lock is a synchronization mechanism based
+on an atomic variable and a waitqueue. It works like this:
+
+static void rx(void)
+{
+        ...
+        if (rio_trylock(&p->rx_lock) == 0)
+                return; /* Didn't get the lock! */
+
+        /* Critical region */
+
+        rio_unlock(&p->rx_lock);
+}
+
+static void rio_workq_func(struct work_struct *p)
+{
+        ...
+        synchronize_rio_lock(&p->rx_lock);
+
+        /*
+         * When synchronize_rio_lock returns, two things are guaranteed:
+         *
+         * 1. No one can acquire rx_lock, i.e. no one can enter the critical
+         *    region.
+         * 2. No one is left inside the critical region.
+         *
+         * Note: synchronize_rio_lock may sleep!
+         */
+        ...
+}
+
+Let us have a closer look at how this works. First we have the rio_lock data
+type,
+
+struct rio_lock {
+        atomic_t count;
+        wait_queue_head_t waitq;
+};
+
+and then three functions. Note that count must be initialized to 1 to allow
+anyone to get the lock!
+
+static inline int rio_trylock(struct rio_lock *lock)
+{
+        return atomic_positive_inc(&lock->count);
+}
+
+If count is greater than 0, rio_trylock will increment count and return
+success, i.e. got the lock. Note that count-1 is the number of users currently
+holding the lock (since count is initialized to 1).
+
+static inline void rio_unlock(struct rio_lock *lock)
+{
+        if (atomic_add_negative(-1, &lock->count))
+                wake_up_sync(&lock->waitq);
+}
+
+As long as count is greater than 1, rio_unlock just decrements count. However
+if count is less than or equal to 0, then wake_up_sync is also called (for
+every rio_unlock).
+
+static inline void synchronize_rio_lock(struct rio_lock *lock)
+{
+        int k = atomic_xchg(&lock->count, 0) - 1;
+        if (k <= 0)
+                return;
+        wait_event(lock->waitq, atomic_read(&lock->count) == -k);
+}
+
+First, count is replaced with 0 and k is assigned the number of users currently
+holding the lock. Since count now is less than or equal to 0, rio_trylock will
+fail. If k is 0, no one is holding the lock and it is safe to return. But if k
+is greater than 0, then we have to wait until all lock holders have called
+rio_unlock, before we can return. That is why we use a waitqueue and sleeps
+until count is -k (rio_unlock adds -1 to count).
+
+For example, let us say that count is 3, i.e. there are 2 lock holders. Now
+synchronize_rio_lock is called and when we reach wait_event, count is 0 and
+k is 2, i.e. we sleep until count is -2. When the lock holders are done and
+call rio_unlock, count is first -1 and then -2, since count is negative
+wake_up_sync is called.
+
+Each RIOCM connection uses 3 riocm-locks namely,
+
+* tx_lock, this lock is used to control packet transmission, i.e. it is
+          (re-)set to 1 on connect downcall and synchronize_rio_lock is called
+           prior to a disconnected upcall.
+
+* rx_lock, this lock is used to stop deliver upcalls after a disconnected
+           upcall, i.e. synchronize_rio_lock is called prior to a disconnected
+           upcall.
+
+* conn_rx_lock, this lock is used to stop CONN packets from being submitted to
+                the workqueue, i.e. do not call rio_submit_conn_pkt any more.
+
+RIOCM makes use of reference counting for the connection objects. The use count
+is initialized to 1 and the object is freed when the use count is 0. There are
+get/put functions, however they are not "generic" (no need for it).
+Instead the following rules apply:
+
+* Transmit functions, e.g. rio_dc_transmit, rio_send_conn_pkt, etc., always
+  receive the connection object as a parameter, so it is up to "the caller"
+  to guarantee that the connection object is not released.
+
+* The receive entry point must use get_rio_connection to look-up the correct
+  connection object and call put_rio_connection once it no longer needs
+  the object.
+
+* The workqueue can access the connection object unrestricted. When a
+  connection should be removed, the workqueue must do put_rio_connection.
+  Before it can call put_rio_connection, it must make sure that no more jobs
+  are in, or submitted to the workqueue.
+
+
+"The connection object" data structure:
+---------------------------------------
+
+Since receive code must be able to look-up a connection, based on information
+in a packet, the following data structure is used.
+
+rio_device_list ---> struct rio_dev ---> struct rio_dev ---> ...
+                          ^  |  |
+                          |  |  +---> struct net_device
+                          |  |
+                          |  +---> struct RlnhLinkObj ---> ...
+                          |               |  ^
+                          +---------------+  |
+                                             |
+                                             |
+rio_connection_array[0] (reserved)           |
+                    [1] ---------------------+
+                    [2]
+                    ...
+                    [255]
+
+	      Fig.2 The RIOCM's connection object data structure.
+
+First, the struct RlnhLinkObj is the connection object, which holds all per
+connection data. The struct rio_dev is a container for the kernel's struct
+net_device (see network device section for more information).
+
+RIOCM keeps network devices (or interfaces), e.g. rio0, rio1, in a list,
+rio_device_list. Each list entry is associated with one struct net_device.
+Also, all connections assigned to this interface (see mkriocon man-page) is
+linked to this entry. RIOCM also have an array of connection object pointers,
+indexed with a so-called connection ID (see RIOCM protocol for details), to
+provide fast connection look-up.
+
+All in all, this data structure makes it possible to look-up a connection
+object from a connection ID, sender/src_port or struct net_device/struct rio_dev
+pointer.
+
+As mentioned above, this data structure is accessed from both receive and
+workqueue context and must be protected. A spinlock, rio_lock, is used since
+receive code can not sleep (atomic context). There is one function to add
+a connection object, add_rio_connection, and one function, del_rio_connection,
+to remove it. Note that the del_rio_function does not free the connection
+object, it merely unlink it from the data structure, i.e. get_rio_connection
+will not find it. A connection object is only freed when the last user calls
+put_rio_connection.
+
+
+The connection state machine:
+-----------------------------
+
+The bulk of the connection management is done in do_the_gory_stuff and its
+subroutines (most workqueue jobs calls this functions). It has one task, to
+make sure that the RLNH/CM API (see rlnh_link.h) is fulfilled. A simple state
+machine is used, a short state description follows.
+
+* STATE_DISCONNECTED, disconnected upcall has been called. It is also
+                      a connection's initial state.
+
+* STATE_CONNECTING,   got a connect downcall, start connecting to peer.
+
+* STATE_CONNECTED,    connected upcall has been called.
+
+A CONN_RESET or a RIOCM protocol violation in "CONNECTING" state sets the state
+back to DISCONNECTED. If a CONN_RESET is received or a protocol violation
+occurs in STATE_CONNECTED, the state is set back DISCONNECTED.
+
+In "CONNECTING" state, a timer is used to drive the state machine (if the peer
+does not respond). Each time-out, a CONN_TMO is fed into the state machine.
+Once in STATE_CONNECTED, the same timer is used to supervise the connection.
+This timer is started when the connection is created and stopped when
+the connection is removed.
+
+   STATE_DISCONNECTED <--> STATE_CONNECTING <----------- STATE_CONNECTED
+            ^                                                         |
+            |                                                         |
+            +---------------------------------------------------------+
+
+			Fig.3 The RIOCM state machine.
+
+One thing worth mentioning, an "RIOCM internal" disconnect is done by feeding
+a CONN_RESET into the state machine.
+
+
+"The connection ID problem":
+----------------------------
+
+The connection id (or cid) is used for fast connection object look-up. During
+connection setup, the cid is sent to the peer (field in the CONN_ACK).
+During the connection establishment, the connection objects are however always
+looked-up via the device id and user defined port.
+Once the connection is up, packets from the peer contains this cid.
+
+Due to a theoretical scenario, in which the cid cannot be trusted, the
+connection object is always double checked to match the senders device id and
+port.
+
+The theoretical scenario is as follows:
+Let x, y and z be three nodes in a rio-linked network. The commune with each
+other by the cids they have given its peers. Let x commune with y with the cid
+j. Imagine the node y being quickly reset (reboots in ~30 ms), establishing a
+connection to z, with cid j! x may not have detected that y was reset, and the
+next time it sends a packet with cid j to y - y will believe that this packet
+was sent from z!
+
+Network device client:
+----------------------
+
+The RIOCM acts as a network device client, it supports a couple of network
+events.
+
+* NETDEV_REGISTER,   a network device is available, see handle_netdev_register.
+* NETDEV_DOWN,       a network device is shut-down, see handle_netdev_down.
+* NETDEV_UP,         a network device is up, no code is needed to handle this
+                     event, the connection timer takes care of it.
+* NETDEV_UNREGISTER, a network device is unavailable, e.g. when the driver is
+                     unloaded, see handle_netdev_register.
+
+Other events are either ignored (no impact RIOCM) or unsupported (have impact
+on RIOCM). Ignored events are dropped and logged, while unsupported events
+always prints an error message.
+
+Connections are created/destroyed with commands, there is no way to internally
+destroy a connection. So when a NETDEV_UNREGISTER event is received for
+an interface, any connections using that interface are moved to a separate
+list, rio_orphan_list. A connection stays in the "orphan" list until a matching
+interface is registered (i.e. NETDEV_REGISTER is received), then it is moved
+to that interface's connection list. Note that matching is done solely on the
+interface name. Beware!!!
+
+
+Rapid IO Message Passing Driver:
+--------------------------------
+
+RIOCM requires a Rapid IO Message Passing driver. RIOCM expects this driver to
+publish itself in the form of a net device similar to Ethernet Device
+drivers. The driver is not part of the LINX for Linux release.
+
+As described in the previous section RIOCM subscribes to device events and
+expects the driver to send NETDEV_REGISTER, NETDEV_UNREGISTER, NETDEV_UP and
+NETDEV_DOWN events.
+
+Analogous to Ethernet devices RIOCM make use of the function dev_hard_header()
+to set certain protocol data. For ethernet this is MAC-address, for Rapid IO
+it's destination DI/mailbox. For example:
+
+static void fill_rio_hdr(struct RlnhLinkObj *co, struct sk_buff *skb)
+{
+	struct net_device *dev;
+	struct {
+		uint16_t dest_ID;
+		uint8_t dest_mbox;
+		uint8_t pad;
+	} daddr;
+
+	/* this is how the srio needs it */
+
+	daddr.dest_ID = co->peer_ID;
+	daddr.dest_mbox = co->peer_mbox;
+	daddr.pad = 0;
+
+	dev = co->rio_dev->dev;
+	dev_hard_header(skb, dev, RIO_PROTOCOL, &daddr,
+			co->rio_dev->dev->dev_addr, skb->len);
+}
+
+The net device layer uses the (Ethernet type) of incoming packets to identify
+the receiver. Since this field doesn't exist in Rapid IO a protocol filed has
+been defined in the RIOCM protocols. The protocol field is written by the RIOCM
+and read by the driver and the net device layer in order to direct incoming
+packets to the correct client. The value of the protocol field is 0x22cf in
+this version of the protocol.
+
+
+RX and TX
+=========
+
+Reordering:
+-----------
+
+Rapid IO is considered a reliable medium so there's no need for the Connection
+Manager to enforce reliability through a Sliding Window or similar
+mechanism. However, Rapid IO hardware might return packets out-of-order,
+i.e. packets are received in a different order than they were sent. To handle
+this all packets carries a sequence number and the RIOCM delays packets
+received out-of-order in a reordering queue until all missing packets have been
+received. This queue has a limited length and the connection will be verbosely
+reset if it is exhausted.
+
+Tasklets in RX and TX:
+----------------------
+
+Depending on the Linux kernel interrupts are handled differently, when running
+RIOCM on a SMP environment we must assume that rx interrupts can be handled in
+parallel on any core resulting in the RIOCM being called on different cores
+simultaneously. Without some form of synchronization, packets could be
+delivered to higher layers in the wrong order even if they have been received
+in the correct order by the RIOCM.
+
+In the RIOCM the strategy was to do as much processing in the RX interrupt
+itself increasing parallelism and use tasklets to synchronize delivery of
+signals to higher layers.
+
+On the TX side a transmit downcall can be called at any time (if the connection
+is connected) and from any context. The critical part on the sending side is
+the allocation of sequence numbers that all reliable packets must have.
+
+There is one tasklet for RX and one for TX per connection.
+
+To synchronize with connect/disconnect there cannot be anyone running in either
+RX or TX which means in the RX case that from that the RX interrupt occurs
+until the time the tasklet has run and taken care of that packet the RIOCM is
+considered to be "in RX". The same on the TX side, after calling the transmit
+downcall until the TX tasklet has been run and the packet taken care of we are
+"in TX".
+
+When a disconnect is called the RIOCM must wait until no one is left in RX or
+TX.  Atomic counters are used to keep track of number of how many are in RX and
+TX.  But it is not just as easy as counting the number of times a tasklet is
+scheduled. A tasklet runs in a soft interrupt and can only run on one core at a
+given time, the same tasklet cannot run on several cores at once. A tasklet can
+be re-scheduled if it is already running but it cannot be scheduled several
+times, i.e. if the tasklet is running and during that schedule_tasklet is
+called twice for that tasklet it will only be scheduled once. Still, the RIOCM
+must keep track of how many times the tasklet actually is scheduled and if it
+is scheduled then and only then increase the usage counter, this little bit of
+code takes care of that:
+
+static inline void schedule_rx_tasklet(struct RlnhLinkObj *co)
+{
+        if (likely(0 == test_and_set_bit(TASKLET_STATE_SCHED, &co->rx.state))){
+                if (unlikely(0 == rio_trylock(&co->rx_lock)))
+                        clear_bit(TASKLET_STATE_SCHED, &co->rx.state);
+                else
+                        __tasklet_schedule(&co->rx);
+        }
+}
+
+This function checks the state of the tasklet to find out if it is already
+scheduled by checking the TASKLET_STATE_SCHED bit in co->state. If the tasklet
+is scheduled it will do nothing, if not then the TASKLET_STATE_SCHED bit is set
+and the counter is increased by calling rio_trylock before the tasklet is
+actually sent to the scheduler with __tasklet_schedule. Should there be a
+disconnect in progress the rio_trylock will fail and the tasklet will not be
+scheduled and the state will be cleared.
+
+
+Fragmentation implementation:
+-----------------------------
+
+The RIOCM is limited by the RIO MTU in how much user-data it can send in each
+packet, signals larger than the MTU must be split into fragments and
+each fragment sent in separate packets. The RIOCM uses two different
+fragmentation algorithms, depending on the host capabilities.
+
+The first mechanism, known as "simple fragmentation", sends a signal as one
+frag-start message followed by one ore more frag-message. This requires support
+for gather write in the driver or that RIOCM allocates and memcopies new
+buffers. The second mechanism is called "patch fragmentation", here fragment
+headers are written in the original data buffer and overwritten data is sent in
+separate "patch fragments" that trail the sequence of fragments.
+
+In both cases the sequence of fragments and patches are reassembled on the
+RX-side before the signal is delivered to the receiving process.
+
+RIOCM always uses simple fragmentation for TX but supports both simple
+fragmentation and patch fragmentation for RX.
+
+See the LINX protocol specification for a complete description of the User Data
+Protocol.
+
+ LocalWords:  workqueue RIOCM waitqueue rio tasklet
